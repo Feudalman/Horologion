@@ -1,7 +1,7 @@
 use rdev::{listen, Event, EventType};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use log::{info, error};
+use log::{info, error, warn};
 
 static MONITORING: AtomicBool = AtomicBool::new(false);
 
@@ -14,10 +14,17 @@ pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
     info!("开始启动键鼠事件监听...");
     
     thread::spawn(|| {
-        if let Err(error) = listen(callback) {
-            error!("监听错误: {:?}", error);
-            MONITORING.store(false, Ordering::Relaxed);
+        info!("监听线程已启动");
+        match listen(callback) {
+            Ok(_) => {
+                info!("监听正常结束");
+            }
+            Err(error) => {
+                error!("监听错误: {:?}", error);
+                MONITORING.store(false, Ordering::Relaxed);
+            }
         }
+        info!("监听线程已退出");
     });
     
     info!("键鼠事件监听已启动");
@@ -29,9 +36,9 @@ pub fn stop_monitoring() {
     info!("键鼠事件监听已停止");
 }
 
-fn callback(event: Event) {
+fn callback(event: Event) -> Option<Event> {
     if !MONITORING.load(Ordering::Relaxed) {
-        return;
+        return Some(event);
     }
     
     match event.event_type {
@@ -56,4 +63,7 @@ fn callback(event: Event) {
                   delta_x, delta_y);
         }
     }
+    
+    // 返回 Some(event) 允许事件继续传播到系统
+    Some(event)
 }
