@@ -1,20 +1,12 @@
 mod core;
 
 use core::input_monitor;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 #[tauri::command]
 fn start_input_monitoring() -> Result<String, String> {
     match input_monitor::start_monitoring() {
-        Ok(_) => Ok("键鼠事件监听已启动".to_string()),
-        Err(e) => Err(format!("启动监听失败: {}", e)),
+        Ok(_) => Ok("monitor started".to_string()),
+        Err(e) => Err(format!("monitor error: {}", e)),
     }
 }
 
@@ -26,12 +18,16 @@ fn stop_input_monitoring() -> Result<String, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 检查是否手动设置了日志级别，如果没有，则设置为 info
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "info");
+    }
     // 初始化日志
     env_logger::init();
     
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, start_input_monitoring, stop_input_monitoring])
+        .invoke_handler(tauri::generate_handler![start_input_monitoring, stop_input_monitoring])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
