@@ -1,7 +1,7 @@
 use rdev::{listen, Event, EventType};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use log::{info, error, warn};
+use log::{info, error};
 
 static MONITORING: AtomicBool = AtomicBool::new(false);
 
@@ -36,34 +36,41 @@ pub fn stop_monitoring() {
     info!("键鼠事件监听已停止");
 }
 
-fn callback(event: Event) -> Option<Event> {
+fn callback(event: Event) {
     if !MONITORING.load(Ordering::Relaxed) {
-        return Some(event);
+        return;
     }
-    
-    match event.event_type {
-        EventType::KeyPress(key) => {
-            info!("键盘按下: {:?}, event name: {:?}", key, event.name);
+
+    let result = std::panic::catch_unwind(|| {
+        if !MONITORING.load(Ordering::Relaxed) {
+            return;
         }
-        EventType::KeyRelease(key) => {
-            info!("键盘释放: {:?}, event name: {:?}", key, event.name);
+
+        match event.event_type {
+            EventType::KeyPress(key) => {
+                info!("键盘按下: {:?}, event name: {:?}", key, event.name);
+            }
+            EventType::KeyRelease(key) => {
+                info!("键盘释放: {:?}, event name: {:?}", key, event.name);
+            }
+            EventType::ButtonPress(button) => {
+                info!("鼠标按下: {:?}, event name: {:?}", button, event.name);
+            }
+            EventType::ButtonRelease(button) => {
+                info!("鼠标释放: {:?}, event name: {:?}", button, event.name);
+            }
+            EventType::MouseMove { x, y } => {
+                // 鼠标移动事件太频繁，可以选择性记录
+                // info!("鼠标移动到: ({}, {})", x, y);
+            }
+            EventType::Wheel { delta_x, delta_y } => {
+                info!("鼠标滚轮: delta_x={}, delta_y={}", 
+                    delta_x, delta_y);
+            }
         }
-        EventType::ButtonPress(button) => {
-            info!("鼠标按下: {:?}, event name: {:?}", button, event.name);
-        }
-        EventType::ButtonRelease(button) => {
-            info!("鼠标释放: {:?}, event name: {:?}", button, event.name);
-        }
-        EventType::MouseMove { x, y } => {
-            // 鼠标移动事件太频繁，可以选择性记录
-            // info!("鼠标移动到: ({}, {})", x, y);
-        }
-        EventType::Wheel { delta_x, delta_y } => {
-            info!("鼠标滚轮: delta_x={}, delta_y={}", 
-                  delta_x, delta_y);
-        }
+    });
+
+    if let Err(e) = result {
+        eprintln!("Callback panicked: {:?}", e);
     }
-    
-    // 返回 Some(event) 允许事件继续传播到系统
-    Some(event)
 }
