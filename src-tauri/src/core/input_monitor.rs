@@ -1,0 +1,60 @@
+use rdev::{listen, Event, EventType, Key, Button};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
+use log::{info, error};
+
+static MONITORING: AtomicBool = AtomicBool::new(false);
+
+pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
+    if MONITORING.load(Ordering::Relaxed) {
+        return Err("监听已经在运行中".into());
+    }
+    
+    MONITORING.store(true, Ordering::Relaxed);
+    info!("开始启动键鼠事件监听...");
+    
+    thread::spawn(|| {
+        if let Err(error) = listen(callback) {
+            error!("监听错误: {:?}", error);
+            MONITORING.store(false, Ordering::Relaxed);
+        }
+    });
+    
+    info!("键鼠事件监听已启动");
+    Ok(())
+}
+
+pub fn stop_monitoring() {
+    MONITORING.store(false, Ordering::Relaxed);
+    info!("键鼠事件监听已停止");
+}
+
+fn callback(event: Event) {
+    if !MONITORING.load(Ordering::Relaxed) {
+        return;
+    }
+    
+    match event.event_type {
+        EventType::KeyPress(key) => {
+            info!("键盘按下: {:?} at ({}, {})", key, event.position.x, event.position.y);
+        }
+        EventType::KeyRelease(key) => {
+            info!("键盘释放: {:?} at ({}, {})", key, event.position.x, event.position.y);
+        }
+        EventType::ButtonPress(button) => {
+            info!("鼠标按下: {:?} at ({}, {})", button, event.position.x, event.position.y);
+        }
+        EventType::ButtonRelease(button) => {
+            info!("鼠标释放: {:?} at ({}, {})", button, event.position.x, event.position.y);
+        }
+        EventType::MouseMove { x, y } => {
+            // 鼠标移动事件太频繁，可以选择性记录
+            // info!("鼠标移动到: ({}, {})", x, y);
+        }
+        EventType::Wheel { delta_x, delta_y } => {
+            info!("鼠标滚轮: delta_x={}, delta_y={} at ({}, {})", 
+                  delta_x, delta_y, event.position.x, event.position.y);
+        }
+    }
+}
