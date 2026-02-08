@@ -48,10 +48,11 @@ fn callback(event: Event) {
 
         match event.event_type {
             EventType::KeyPress(key) => {
-                info!("keyboard pressed: {:?}, event name: {:?}", key, event.name);
+                // 避免使用 event.name，因为在 macOS 上可能触发主线程断言
+                info!("keyboard pressed: {:?}", key);
             }
             EventType::KeyRelease(key) => {
-                info!("keyboard released: {:?}, event name: {:?}", key, event.name);
+                info!("keyboard released: {:?}", key);
             }
             EventType::ButtonPress(button) => {
                 info!("mouse pressed: {:?}, event name: {:?}", button, event.name);
