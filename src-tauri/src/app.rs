@@ -11,9 +11,9 @@ pub fn init_and_run() {
     
     // 自动启动键鼠事件监听
     if let Err(e) = input_monitor::start_monitoring() {
-        log::error!("自动启动监听失败: {}", e);
+        log::error!("auto start input monitoring error: {}", e);
     } else {
-        log::info!("键鼠事件监听已自动启动");
+        log::info!("auto start input monitoring success");
     }
     
     tauri::Builder::default()
