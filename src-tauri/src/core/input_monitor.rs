@@ -6,34 +6,34 @@ use log::{info, error};
 static MONITORING: AtomicBool = AtomicBool::new(false);
 
 pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
+    // 重复启动，不做处理
     if MONITORING.load(Ordering::Relaxed) {
-        return Err("监听已经在运行中".into());
+        return Err("monitor is already running".into());
     }
     
     MONITORING.store(true, Ordering::Relaxed);
-    info!("开始启动键鼠事件监听...");
+    info!("monitoring...");
     
     thread::spawn(|| {
-        info!("监听线程已启动");
+        info!("monitoring thread started");
         match listen(callback) {
             Ok(_) => {
-                info!("监听正常结束");
+                info!("exiting monitoring thread");
             }
             Err(error) => {
-                error!("监听错误: {:?}", error);
+                error!("monitoring error: {:?}", error);
                 MONITORING.store(false, Ordering::Relaxed);
             }
         }
-        info!("监听线程已退出");
+        info!("monitoring thread exited");
     });
     
-    info!("键鼠事件监听已启动");
     Ok(())
 }
 
 pub fn stop_monitoring() {
     MONITORING.store(false, Ordering::Relaxed);
-    info!("键鼠事件监听已停止");
+    info!("monitor stopped");
 }
 
 fn callback(event: Event) {
@@ -48,24 +48,23 @@ fn callback(event: Event) {
 
         match event.event_type {
             EventType::KeyPress(key) => {
-                info!("键盘按下: {:?}, event name: {:?}", key, event.name);
+                info!("keyboard pressed: {:?}, event name: {:?}", key, event.name);
             }
             EventType::KeyRelease(key) => {
-                info!("键盘释放: {:?}, event name: {:?}", key, event.name);
+                info!("keyboard released: {:?}, event name: {:?}", key, event.name);
             }
             EventType::ButtonPress(button) => {
-                info!("鼠标按下: {:?}, event name: {:?}", button, event.name);
+                info!("mouse pressed: {:?}, event name: {:?}", button, event.name);
             }
             EventType::ButtonRelease(button) => {
-                info!("鼠标释放: {:?}, event name: {:?}", button, event.name);
+                info!("mouse released: {:?}, event name: {:?}", button, event.name);
             }
             EventType::MouseMove { x, y } => {
                 // 鼠标移动事件太频繁，可以选择性记录
                 // info!("鼠标移动到: ({}, {})", x, y);
             }
             EventType::Wheel { delta_x, delta_y } => {
-                info!("鼠标滚轮: delta_x={}, delta_y={}", 
-                    delta_x, delta_y);
+                info!("mouse scroll: delta_x={}, delta_y={}", delta_x, delta_y);
             }
         }
     });
