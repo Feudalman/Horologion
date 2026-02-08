@@ -11,5 +11,5 @@ pub fn start_input_monitoring() -> Result<String, String> {
 #[tauri::command]
 pub fn stop_input_monitoring() -> Result<String, String> {
     input_monitor::stop_monitoring();
-    Ok("键鼠事件监听已停止".to_string())
+    Ok("monitor stopped".to_string())
 }

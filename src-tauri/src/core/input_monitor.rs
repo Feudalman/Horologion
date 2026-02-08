@@ -55,10 +55,10 @@ fn callback(event: Event) {
                 info!("keyboard released: {:?}", key);
             }
             EventType::ButtonPress(button) => {
-                info!("mouse pressed: {:?}, event name: {:?}", button, event.name);
+                info!("mouse pressed: {:?}", button);
             }
             EventType::ButtonRelease(button) => {
-                info!("mouse released: {:?}, event name: {:?}", button, event.name);
+                info!("mouse released: {:?}", button);
             }
             EventType::MouseMove { x, y } => {
                 // 鼠标移动事件太频繁，可以选择性记录
