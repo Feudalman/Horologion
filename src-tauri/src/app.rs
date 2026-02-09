@@ -1,8 +1,8 @@
 use log::{error, info, warn};
+use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::io::{BufRead, BufReader};
 
 // 全局子进程句柄
 static mut LISTENER_PROCESS: Option<Arc<Mutex<Option<Child>>>> = None;
@@ -37,11 +37,13 @@ pub fn init_and_run() {
 
 fn start_listener_process() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting listener sidecar process...");
-    
+
     // 获取当前可执行文件的路径
     let current_exe = std::env::current_exe()?;
-    let exe_dir = current_exe.parent().ok_or("Failed to get executable directory")?;
-    
+    let exe_dir = current_exe
+        .parent()
+        .ok_or("Failed to get executable directory")?;
+
     // 构建监听器可执行文件路径
     let listener_exe = if cfg!(windows) {
         exe_dir.join("listener.exe")
@@ -52,7 +54,7 @@ fn start_listener_process() -> Result<(), Box<dyn std::error::Error>> {
     info!("Listener executable path: {:?}", listener_exe);
 
     // 启动子进程
-    let mut child = Command::new(&listener_exe)
+    let child = Command::new(&listener_exe)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
@@ -66,7 +68,7 @@ fn start_listener_process() -> Result<(), Box<dyn std::error::Error>> {
 
     // 在新线程中读取子进程输出
     let child_handle = unsafe { LISTENER_PROCESS.as_ref().unwrap().clone() };
-    
+
     thread::spawn(move || {
         let mut child_guard = child_handle.lock().unwrap();
         if let Some(ref mut child) = *child_guard {
@@ -114,7 +116,7 @@ fn handle_listener_event(event_line: &str) {
     // 解析事件数据并处理
     // 例如：KeyPress:Key(A) -> 解析为键盘按下事件
     info!("Processing event: {}", event_line);
-    
+
     // 这里可以添加事件处理逻辑，比如：
     // - 发送事件到前端
     // - 记录到数据库
@@ -123,7 +125,7 @@ fn handle_listener_event(event_line: &str) {
 
 fn cleanup_listener_process() {
     info!("Cleaning up listener process...");
-    
+
     unsafe {
         if let Some(process_handle) = &LISTENER_PROCESS {
             let mut child_guard = process_handle.lock().unwrap();
