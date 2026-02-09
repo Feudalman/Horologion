@@ -1,10 +1,12 @@
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tokio::process::{Child, Command};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use log::{info, error, warn};
 
 static MONITORING: AtomicBool = AtomicBool::new(false);
-static mut CHILD_PROCESS: Option<Child> = None;
+static CHILD_PROCESS: Mutex<Option<Child>> = Mutex::const_new(None);
 
 pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
     // 重复启动，不做处理
@@ -29,16 +31,17 @@ pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
 pub fn stop_monitoring() {
     MONITORING.store(false, Ordering::Relaxed);
     
-    // 终止子进程
-    unsafe {
-        if let Some(mut child) = CHILD_PROCESS.take() {
-            if let Err(e) = child.kill() {
+    // 异步终止子进程
+    tokio::spawn(async {
+        let mut child_guard = CHILD_PROCESS.lock().await;
+        if let Some(mut child) = child_guard.take() {
+            if let Err(e) = child.kill().await {
                 warn!("Failed to kill child process: {}", e);
             } else {
                 info!("Child process terminated");
             }
         }
-    }
+    });
     
     info!("monitor stopped");
 }
@@ -57,31 +60,32 @@ async fn run_input_listener() -> Result<(), Box<dyn std::error::Error + Send + S
         .stderr(std::process::Stdio::piped())
         .spawn()?;
     
+    let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
+    
     // 保存子进程引用以便后续终止
-    unsafe {
-        CHILD_PROCESS = Some(child);
-        if let Some(ref mut child) = CHILD_PROCESS {
-            let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
-            let reader = BufReader::new(stdout);
-            let mut lines = reader.lines();
-            
-            info!("Input listener process started, reading events...");
-            
-            // 读取子进程输出
-            while MONITORING.load(Ordering::Relaxed) {
-                match lines.next_line().await {
-                    Ok(Some(line)) => {
-                        process_event_line(&line);
-                    }
-                    Ok(None) => {
-                        info!("Input listener process ended");
-                        break;
-                    }
-                    Err(e) => {
-                        error!("Error reading from input listener: {}", e);
-                        break;
-                    }
-                }
+    {
+        let mut child_guard = CHILD_PROCESS.lock().await;
+        *child_guard = Some(child);
+    }
+    
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+    
+    info!("Input listener process started, reading events...");
+    
+    // 读取子进程输出
+    while MONITORING.load(Ordering::Relaxed) {
+        match lines.next_line().await {
+            Ok(Some(line)) => {
+                process_event_line(&line);
+            }
+            Ok(None) => {
+                info!("Input listener process ended");
+                break;
+            }
+            Err(e) => {
+                error!("Error reading from input listener: {}", e);
+                break;
             }
         }
     }
