@@ -4,6 +4,8 @@ version = "0.0.1"
 description = "Horologion"
 authors = ["feuclalman@gmail.com"]
 edition = "2021"
+# 默认从主程序启动
+default-run = "horologion"
 
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
@@ -13,9 +15,15 @@ name = "horologion_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-# 在 src-tauri 下运行 `cargo run --bin input_listener` 可以仅启动监听进程
-name = "input_listener"
-path = "src/bin/input_listener.rs"
+# 主进程
+name = "horologion"
+path = "src/main.rs"
+
+[[bin]]
+# 子进程，用于监听键鼠事件
+# 在 src-tauri 下运行 `cargo run --bin listener` 可以仅启动监听进程
+name = "listener"
+path = "src/listener/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
