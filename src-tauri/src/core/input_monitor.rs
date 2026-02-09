@@ -1,5 +1,4 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use tokio::process::{Child, Command};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use log::{info, error, warn};
