@@ -1,5 +1,6 @@
 use crate::commands;
 use crate::core::input_monitor;
+use log::{error, info};
 
 pub fn init_and_run() {
     // 检查是否手动设置了日志级别，如果没有，则设置为 info
@@ -11,9 +12,9 @@ pub fn init_and_run() {
     
     // 自动启动键鼠事件监听
     if let Err(e) = input_monitor::start_monitoring() {
-        log::error!("auto start input monitoring error: {}", e);
+        error!("auto start input monitoring error: {}", e);
     } else {
-        log::info!("auto start input monitoring success");
+        info!("auto start input monitoring success");
     }
     
     tauri::Builder::default()

@@ -1,14 +1,14 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::process::{Child, Command};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use log::{info, error, warn};
+use std::error::Error;
 
 static MONITORING: AtomicBool = AtomicBool::new(false);
 static CHILD_PROCESS: Mutex<Option<Child>> = Mutex::const_new(None);
 
-pub fn start_monitoring() -> Result<(), Box<dyn std::error::Error>> {
+pub fn start_monitoring() -> Result<(), Box<dyn Error>> {
     // 重复启动，不做处理
     if MONITORING.load(Ordering::Relaxed) {
         return Err("monitor is already running".into());
@@ -46,7 +46,7 @@ pub fn stop_monitoring() {
     info!("monitor stopped");
 }
 
-async fn run_input_listener() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn run_input_listener() -> Result<(), Box<dyn Error + Send + Sync>> {
     // 获取当前可执行文件的路径
     let current_exe = std::env::current_exe()?;
     let exe_dir = current_exe.parent().ok_or("Failed to get exe directory")?;
