@@ -4,6 +4,7 @@ version = "0.0.1"
 description = "Horologion"
 authors = ["feuclalman@gmail.com"]
 edition = "2021"
+default-run = "horologion"
 
 [lib]
 name = "horologion_lib"
