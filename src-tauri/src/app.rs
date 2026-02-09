@@ -9,14 +9,14 @@ pub fn init_and_run() {
     }
     // 初始化日志
     env_logger::init();
-    
+
     // 自动启动键鼠事件监听
     if let Err(e) = input_monitor::start_monitoring() {
         error!("auto start input monitoring error: {}", e);
     } else {
         info!("auto start input monitoring success");
     }
-    
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
