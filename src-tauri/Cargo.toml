@@ -33,7 +33,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rdev = "0.4"
+rdev = { git = "https://github.com/Narsil/rdev.git", rev = "3d0ec1d3bb106e889466e20bd83b273e66066cc4" }
 log = "0.4"
 env_logger = "0.10"
 
