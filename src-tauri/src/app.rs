@@ -1,20 +1,25 @@
 use log::{error, info, warn};
 use once_cell::sync::Lazy;
+use std::error::Error;
 use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::thread;
 
+/// 监听器管理器
 struct ListenerManager {
     child: Option<Child>,
 }
 
+/// 实现监听器管理器
 impl ListenerManager {
     fn new() -> Self {
         Self { child: None }
     }
 
-    fn start(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    /// 启动监听器子进程
+    fn start(&mut self) -> Result<(), Box<dyn Error>> {
+        // 检查是否已经启动，不允许重复启动
         if self.child.is_some() {
             warn!("Listener process is already running");
             return Ok(());
@@ -49,6 +54,7 @@ impl ListenerManager {
         Ok(())
     }
 
+    /// 停止监听器子进程
     fn stop(&mut self) {
         if let Some(mut child) = self.child.take() {
             match child.kill() {
@@ -61,13 +67,17 @@ impl ListenerManager {
         }
     }
 
+    /// 取出子进程
+    /// 将移除 child 并返回一个新的子进程引用，原先的 child 将为 None
     fn take_child(&mut self) -> Option<Child> {
         self.child.take()
     }
 }
 
+/// 全局的监听器管理器
 static LISTENER: Lazy<Mutex<ListenerManager>> = Lazy::new(|| Mutex::new(ListenerManager::new()));
 
+/// 初始化并运行应用
 pub fn init_and_run() {
     // 检查是否手动设置了日志级别，如果没有，则设置为 info
     if std::env::var("RUST_LOG").is_err() {
@@ -96,7 +106,8 @@ pub fn init_and_run() {
         .expect("error while running tauri application");
 }
 
-fn start_listener_process() -> Result<(), Box<dyn std::error::Error>> {
+/// 启动监听器子进程
+fn start_listener_process() -> Result<(), Box<dyn Error>> {
     let mut listener = LISTENER.lock().unwrap();
     listener.start()?;
 
@@ -147,17 +158,19 @@ fn start_listener_process() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// # 处理监听器事件
+/// 可添加必要事件处理逻辑：
+/// - 发送事件到前端
+/// - 记录到数据库
+/// - 触发特定操作等
+/// 但是目前的架构设计上，事件处理将在 listener 中完成，而不需要在主线程处理
+/// 主线程仅处理 horologion 的业务逻辑即可，核心监听交由 listener 完成
 fn handle_listener_event(event_line: &str) {
     // 解析事件数据并处理
-    // 例如：KeyPress:Key(A) -> 解析为键盘按下事件
     info!("Processing event: {}", event_line);
-
-    // 这里可以添加事件处理逻辑，比如：
-    // - 发送事件到前端
-    // - 记录到数据库
-    // - 触发特定操作等
 }
 
+/// 停止监听器子进程
 fn cleanup_listener_process() {
     info!("Cleaning up listener process...");
     let mut listener = LISTENER.lock().unwrap();
