@@ -1513,6 +1513,7 @@ version = "0.0.1"
 dependencies = [
  "env_logger",
  "log",
+ "once_cell",
  "rdev",
  "serde",
  "serde_json",

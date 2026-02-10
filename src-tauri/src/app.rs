@@ -66,8 +66,7 @@ impl ListenerManager {
     }
 }
 
-static LISTENER: Lazy<Mutex<ListenerManager>> =
-    Lazy::new(|| Mutex::new(ListenerManager::new()));
+static LISTENER: Lazy<Mutex<ListenerManager>> = Lazy::new(|| Mutex::new(ListenerManager::new()));
 
 pub fn init_and_run() {
     // 检查是否手动设置了日志级别，如果没有，则设置为 info
