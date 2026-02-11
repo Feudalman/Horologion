@@ -48,7 +48,7 @@ fn callback(event: Event) {
                 println!("{}", event_data);
                 io::stdout().flush().unwrap();
             }
-            EventType::MouseMove { x, y } => {
+            EventType::MouseMove { x: _, y: _ } => {
                 // 鼠标移动事件太频繁，可以选择性记录
                 // let event_data = format!("MouseMove:{}:{}|Window:{}", x, y, window_json);
                 // println!("{}", event_data);

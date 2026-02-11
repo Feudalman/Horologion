@@ -1,5 +1,5 @@
 use active_win_pos_rs::get_active_window;
-use log::{error, warn};
+use log::warn;
 use serde_json::json;
 
 /// 窗口信息结构体
@@ -40,13 +40,13 @@ pub fn get_current_window_info() -> Option<WindowInfo> {
         Ok(active_window) => Some(WindowInfo {
             title: active_window.title,
             app_name: active_window.app_name,
-            process_path: active_window.process_path,
-            process_id: active_window.process_id,
-            position: (active_window.position.x, active_window.position.y),
-            size: (active_window.position.width, active_window.position.height),
+            process_path: active_window.process_path.to_string_lossy().to_string(),
+            process_id: active_window.process_id as u32,
+            position: (active_window.position.x as i32, active_window.position.y as i32),
+            size: (active_window.position.width as u32, active_window.position.height as u32),
         }),
         Err(e) => {
-            warn!("Failed to get active window: {}", e);
+            warn!("Failed to get active window: {:?}", e);
             None
         }
     }
