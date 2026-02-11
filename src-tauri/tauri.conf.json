@@ -32,17 +32,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "listener"
+      "bin/listener"
     ]
-  },
-  "plugins": {
-    "shell": {
-      "sidecar": [
-        {
-          "name": "listener",
-          "src": "../src-listener/target/release/listener"
-        }
-      ]
-    }
   }
 }
