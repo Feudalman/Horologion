@@ -37,7 +37,7 @@ impl EventListener {
         let window_json = window_info
             .clone()
             .map(|w| w.to_json())
-            .unwrap_or_else(|| "null".to_string());
+            .unwrap_or_else(|| "{}".to_string());
 
         (time_str, window_json, window_info)
     }
@@ -64,53 +64,26 @@ impl EventListener {
 
             match event.event_type {
                 EventType::KeyPress(key) => {
-                    Self::output_event(
-                        "<KeyPress>",
-                        &format!("{:?}", key),
-                        &time_str,
-                        &window_json,
-                    );
+                    Self::output_event("KeyPress", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::KeyRelease(key) => {
-                    Self::output_event(
-                        "<KeyRelease>",
-                        &format!("{:?}", key),
-                        &time_str,
-                        &window_json,
-                    );
+                    Self::output_event("KeyRelease", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::ButtonPress(button) => {
-                    Self::output_event(
-                        "<ButtonPress>",
-                        &format!("{:?}", button),
-                        &time_str,
-                        &window_json,
-                    );
+                    Self::output_event("ButtonPress", &format!("{:?}", button), &time_str, &window_json);
                 }
                 EventType::ButtonRelease(button) => {
-                    Self::output_event(
-                        "<ButtonRelease>",
-                        &format!("{:?}", button),
-                        &time_str,
-                        &window_json,
-                    );
-                }
-                EventType::MouseMove { x: _, y: _ } => {
-                    // 这个分支永远不会执行，因为上面已经提前返回了
+                    Self::output_event("ButtonRelease", &format!("{:?}", button), &time_str, &window_json);
                 }
                 EventType::Wheel { delta_x, delta_y } => {
-                    Self::output_event(
-                        "<WheelScroll>",
-                        &format!("{}:{}", delta_x, delta_y),
-                        &time_str,
-                        &window_json,
-                    );
+                    Self::output_event("Wheel", &format!("delta_x:{}, delta_y:{}", delta_x, delta_y), &time_str, &window_json);
                 }
+                _ => {}
             }
         });
 
-        if let Err(e) = result {
-            eprintln!("Callback panicked: {:?}", e);
+        if result.is_err() {
+            error!("Error in event callback");
         }
     }
 }

@@ -1,8 +1,6 @@
 use active_win_pos_rs::get_active_window;
-use log::warn;
 use serde_json::json;
 
-/// 窗口信息结构体
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
     pub title: String,
@@ -45,9 +43,6 @@ pub fn get_current_window_info() -> Option<WindowInfo> {
             position: (active_window.position.x, active_window.position.y),
             size: (active_window.position.width, active_window.position.height),
         }),
-        Err(e) => {
-            warn!("Failed to get active window: {:?}", e);
-            None
-        }
+        Err(_) => None,
     }
 }

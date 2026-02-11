@@ -19,11 +19,6 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "horologion"
 path = "src/main.rs"
 
-[[bin]]
-# 子进程，用于监听键鼠事件
-# 在 src-tauri 下运行 `cargo run --bin listener` 可以仅启动监听进程
-name = "listener"
-path = "src/listener/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -31,12 +26,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
+tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rdev = { git = "https://github.com/Narsil/rdev.git", rev = "3d0ec1d3bb106e889466e20bd83b273e66066cc4" }
 log = "0.4"
 env_logger = "0.10"
 once_cell = "1.19"
-active-win-pos-rs = "0.9"
-chrono = { version = "0.4", features = ["serde"] }
 
