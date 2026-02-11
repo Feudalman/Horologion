@@ -1,76 +1,81 @@
 use log::{error, info, warn};
 use once_cell::sync::Lazy;
-use std::error::Error;
-use std::io::{BufRead, BufReader};
-use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use std::thread;
+use tauri::Manager;
+use tauri_plugin_shell::ShellExt;
 
 /// 监听器管理器
 struct ListenerManager {
-    child: Option<Child>,
+    sidecar_child: Option<tauri_plugin_shell::process::CommandChild>,
 }
 
 /// 实现监听器管理器
 impl ListenerManager {
     fn new() -> Self {
-        Self { child: None }
+        Self {
+            sidecar_child: None,
+        }
     }
 
-    /// 启动监听器子进程
-    fn start(&mut self) -> Result<(), Box<dyn Error>> {
+    /// 启动监听器 sidecar 进程
+    fn start(&mut self, app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         // 检查是否已经启动，不允许重复启动
-        if self.child.is_some() {
-            warn!("Listener process is already running");
+        if self.sidecar_child.is_some() {
+            warn!("Listener sidecar is already running");
             return Ok(());
         }
 
         info!("Starting listener sidecar process...");
 
-        // 获取当前可执行文件的路径
-        let current_exe = std::env::current_exe()?;
-        let exe_dir = current_exe
-            .parent()
-            .ok_or("Failed to get executable directory")?;
+        // 使用 Tauri 的 sidecar API 启动子进程
+        let sidecar_command = app_handle.shell().sidecar("listener")?;
+        let (mut rx, child) = sidecar_command.spawn()?;
 
-        // 构建监听器可执行文件路径
-        let listener_exe = if cfg!(windows) {
-            exe_dir.join("listener.exe")
-        } else {
-            exe_dir.join("listener")
-        };
+        info!("Listener sidecar started with PID: {:?}", child.pid());
 
-        info!("Listener executable path: {:?}", listener_exe);
+        // 在后台线程中处理 sidecar 输出
+        let app_handle_clone = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            while let Some(event) = rx.recv().await {
+                match event {
+                    tauri_plugin_shell::process::CommandEvent::Stdout(data) => {
+                        let output = String::from_utf8_lossy(&data);
+                        for line in output.lines() {
+                            if !line.trim().is_empty() {
+                                info!("Listener output: {}", line);
+                                handle_listener_event(line, &app_handle_clone);
+                            }
+                        }
+                    }
+                    tauri_plugin_shell::process::CommandEvent::Stderr(data) => {
+                        let error_output = String::from_utf8_lossy(&data);
+                        for line in error_output.lines() {
+                            if !line.trim().is_empty() {
+                                warn!("Listener stderr: {}", line);
+                            }
+                        }
+                    }
+                    tauri_plugin_shell::process::CommandEvent::Terminated(payload) => {
+                        info!("Listener sidecar terminated with code: {:?}", payload.code);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
 
-        // 启动子进程
-        let child = Command::new(&listener_exe)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-
-        info!("Listener process started with PID: {:?}", child.id());
-
-        self.child = Some(child);
+        self.sidecar_child = Some(child);
         Ok(())
     }
 
-    /// 停止监听器子进程
+    /// 停止监听器 sidecar 进程
     fn stop(&mut self) {
-        if let Some(mut child) = self.child.take() {
+        if let Some(child) = self.sidecar_child.take() {
             match child.kill() {
-                Ok(_) => {
-                    info!("Listener process terminated successfully");
-                    let _ = child.wait(); // 等待进程完全退出
-                }
-                Err(e) => error!("Failed to terminate listener process: {}", e),
+                Ok(_) => info!("Listener sidecar terminated successfully"),
+                Err(e) => error!("Failed to terminate listener sidecar: {}", e),
             }
         }
-    }
-
-    /// 取出子进程
-    /// 将移除 child 并返回一个新的子进程引用，原先的 child 将为 None
-    fn take_child(&mut self) -> Option<Child> {
-        self.child.take()
     }
 }
 
@@ -86,15 +91,14 @@ pub fn init_and_run() {
     // 初始化日志
     env_logger::init();
 
-    // 启动监听器子进程
-    if let Err(e) = start_listener_process() {
-        error!("Failed to start listener process: {}", e);
-    }
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .setup(|_app| {
-            // 注册应用退出时的清理函数
+        .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            // 启动监听器 sidecar 进程
+            if let Err(e) = start_listener_sidecar(app.handle()) {
+                error!("Failed to start listener sidecar: {}", e);
+            }
             Ok(())
         })
         .on_window_event(|_window, event| {
@@ -106,55 +110,10 @@ pub fn init_and_run() {
         .expect("error while running tauri application");
 }
 
-/// 启动监听器子进程
-fn start_listener_process() -> Result<(), Box<dyn Error>> {
+/// 启动监听器 sidecar 进程
+fn start_listener_sidecar(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let mut listener = LISTENER.lock().unwrap();
-    listener.start()?;
-
-    // 取出子进程以便在新线程中处理输出
-    if let Some(mut child) = listener.take_child() {
-        thread::spawn(move || {
-            // 读取标准输出
-            if let Some(stdout) = child.stdout.take() {
-                let reader = BufReader::new(stdout);
-                thread::spawn(move || {
-                    for line in reader.lines() {
-                        match line {
-                            Ok(line) => {
-                                info!("Listener output: {}", line);
-                                handle_listener_event(&line);
-                            }
-                            Err(e) => {
-                                error!("Error reading listener stdout: {}", e);
-                                break;
-                            }
-                        }
-                    }
-                });
-            }
-
-            // 读取错误输出
-            if let Some(stderr) = child.stderr.take() {
-                let reader = BufReader::new(stderr);
-                thread::spawn(move || {
-                    for line in reader.lines() {
-                        match line {
-                            Ok(line) => warn!("Listener stderr: {}", line),
-                            Err(e) => {
-                                error!("Error reading listener stderr: {}", e);
-                                break;
-                            }
-                        }
-                    }
-                });
-            }
-
-            // 将子进程重新放回管理器
-            let mut listener = LISTENER.lock().unwrap();
-            listener.child = Some(child);
-        });
-    }
-
+    listener.start(app_handle)?;
     Ok(())
 }
 
@@ -165,9 +124,12 @@ fn start_listener_process() -> Result<(), Box<dyn Error>> {
 /// - 触发特定操作等
 /// 但是目前的架构设计上，事件处理将在 listener 中完成，而不需要在主线程处理
 /// 主线程仅处理 horologion 的业务逻辑即可，核心监听交由 listener 完成
-fn handle_listener_event(event_line: &str) {
+fn handle_listener_event(event_line: &str, _app_handle: &tauri::AppHandle) {
     // 解析事件数据并处理
     info!("Processing event: {}", event_line);
+    
+    // 如果需要发送事件到前端，可以使用：
+    // app_handle.emit_all("listener-event", event_line).ok();
 }
 
 /// 停止监听器子进程

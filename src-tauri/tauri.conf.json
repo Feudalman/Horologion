@@ -30,6 +30,19 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "externalBin": [
+      "listener"
     ]
+  },
+  "plugins": {
+    "shell": {
+      "sidecar": [
+        {
+          "name": "listener",
+          "src": "../src-listener/target/release/listener"
+        }
+      ]
+    }
   }
 }
