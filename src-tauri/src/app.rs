@@ -1,4 +1,4 @@
-use tauri::Emitter;
+use log::{info, warn};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
@@ -15,17 +15,24 @@ pub fn init_and_run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let app_handle = app.handle().clone();
             let sidecar_command = app.shell().sidecar("listener").unwrap();
-            let (mut rx, mut child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
+            let (mut rx, mut _child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
 
             tauri::async_runtime::spawn(async move {
                 // 读取诸如 stdout 之类的事件
                 while let Some(event) = rx.recv().await {
-                    if let CommandEvent::Stdout(line) = event {
-                        let _ = app_handle.emit("message", Some(format!("'{:?}'", line)));
-                        // 写入 stdin
-                        child.write("message from Rust\n".as_bytes()).unwrap();
+                    match event {
+                        CommandEvent::Stdout(line) => {
+                            info!("[Sidecar STDOUT]: {}", String::from_utf8_lossy(&line));
+                        }
+                        CommandEvent::Stderr(line) => {
+                            // 打印错误流到主程序终端
+                            warn!("[Sidecar STDERR]: {}", String::from_utf8_lossy(&line));
+                        }
+                        CommandEvent::Terminated(payload) => {
+                            warn!("[Sidecar] Terminated: {:?}", payload.code);
+                        }
+                        _ => {}
                     }
                 }
             });
