@@ -29,23 +29,22 @@ impl WindowInfo {
                 "width": self.size.0,
                 "height": self.size.1
             }
-        }).to_string()
+        })
+        .to_string()
     }
 }
 
 /// 获取当前活动窗口信息
 pub fn get_current_window_info() -> Option<WindowInfo> {
     match get_active_window() {
-        Ok(active_window) => {
-            Some(WindowInfo {
-                title: active_window.title,
-                app_name: active_window.app_name,
-                process_path: active_window.process_path,
-                process_id: active_window.process_id,
-                position: (active_window.position.x, active_window.position.y),
-                size: (active_window.position.width, active_window.position.height),
-            })
-        }
+        Ok(active_window) => Some(WindowInfo {
+            title: active_window.title,
+            app_name: active_window.app_name,
+            process_path: active_window.process_path,
+            process_id: active_window.process_id,
+            position: (active_window.position.x, active_window.position.y),
+            size: (active_window.position.width, active_window.position.height),
+        }),
         Err(e) => {
             warn!("Failed to get active window: {}", e);
             None
