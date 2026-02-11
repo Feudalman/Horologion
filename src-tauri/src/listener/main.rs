@@ -1,8 +1,7 @@
+mod window;
 use log::{error, info};
 use rdev::{listen, Event, EventType};
 use std::io::{self, Write};
-
-mod window;
 use window::get_current_window_info;
 
 /// 键鼠监听器
@@ -19,6 +18,7 @@ fn main() {
     }
 }
 
+/// 监听回调
 fn callback(event: Event) {
     let result = std::panic::catch_unwind(|| {
         // 获取当前活动窗口信息
