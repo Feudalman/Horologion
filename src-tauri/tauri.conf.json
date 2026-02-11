@@ -31,11 +31,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": [
-      {
-        "name": "listener",
-        "src": "bin/listener"
-      }
-    ]
+    "externalBin": ["bin/listener"]
   }
 }
