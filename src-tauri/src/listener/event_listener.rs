@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use log::{error, info};
 use rdev::{listen, Event, EventType};
 use std::io::{self, Write};
@@ -29,6 +30,10 @@ impl EventListener {
     /// 监听回调
     fn callback(event: Event) {
         let result = std::panic::catch_unwind(|| {
+            // 获取当前时间
+            let timestamp: DateTime<Local> = Local::now();
+            let time_str = timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+            
             // 获取当前活动窗口信息
             let window_info = get_current_window_info();
             let window_json = window_info
@@ -37,32 +42,32 @@ impl EventListener {
 
             match event.event_type {
                 EventType::KeyPress(key) => {
-                    let event_data = format!("KeyPress:{:?}|Window:{}", key, window_json);
+                    let event_data = format!("{}|KeyPress:{:?}|Window:{}", time_str, key, window_json);
                     println!("{}", event_data);
                     io::stdout().flush().unwrap();
                 }
                 EventType::KeyRelease(key) => {
-                    let event_data = format!("KeyRelease:{:?}|Window:{}", key, window_json);
+                    let event_data = format!("{}|KeyRelease:{:?}|Window:{}", time_str, key, window_json);
                     println!("{}", event_data);
                     io::stdout().flush().unwrap();
                 }
                 EventType::ButtonPress(button) => {
-                    let event_data = format!("ButtonPress:{:?}|Window:{}", button, window_json);
+                    let event_data = format!("{}|ButtonPress:{:?}|Window:{}", time_str, button, window_json);
                     println!("{}", event_data);
                     io::stdout().flush().unwrap();
                 }
                 EventType::ButtonRelease(button) => {
-                    let event_data = format!("ButtonRelease:{:?}|Window:{}", button, window_json);
+                    let event_data = format!("{}|ButtonRelease:{:?}|Window:{}", time_str, button, window_json);
                     println!("{}", event_data);
                     io::stdout().flush().unwrap();
                 }
                 EventType::MouseMove { x: _, y: _ } => {
                     // 鼠标移动事件太频繁，可以选择性记录
-                    // let event_data = format!("MouseMove:{}:{}|Window:{}", x, y, window_json);
+                    // let event_data = format!("{}|MouseMove:{}:{}|Window:{}", time_str, x, y, window_json);
                     // println!("{}", event_data);
                 }
                 EventType::Wheel { delta_x, delta_y } => {
-                    let event_data = format!("Wheel:{}:{}|Window:{}", delta_x, delta_y, window_json);
+                    let event_data = format!("{}|Wheel:{}:{}|Window:{}", time_str, delta_x, delta_y, window_json);
                     println!("{}", event_data);
                     io::stdout().flush().unwrap();
                 }
