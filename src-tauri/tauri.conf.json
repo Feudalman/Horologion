@@ -32,7 +32,10 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "bin/listener"
+      {
+        "name": "listener",
+        "src": "bin/listener"
+      }
     ]
   }
 }
