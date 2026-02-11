@@ -2,6 +2,7 @@ use log::{error, info};
 use rdev::{listen, Event, EventType};
 use std::io::{self, Write};
 
+/// 键鼠监听器
 fn main() {
     // 初始化日志
     env_logger::init();
@@ -15,6 +16,7 @@ fn main() {
     }
 }
 
+/// 监听回调
 fn callback(event: Event) {
     let result = std::panic::catch_unwind(|| {
         match event.event_type {
