@@ -1,4 +1,4 @@
-use tauri::window;
+use tauri::Emitter;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
@@ -15,6 +15,7 @@ pub fn init_and_run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            let app_handle = app.handle().clone();
             let sidecar_command = app.shell().sidecar("listener").unwrap();
             let (mut rx, mut child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
 
@@ -22,9 +23,7 @@ pub fn init_and_run() {
                 // 读取诸如 stdout 之类的事件
                 while let Some(event) = rx.recv().await {
                     if let CommandEvent::Stdout(line) = event {
-                        window
-                            .emit("message", Some(format!("'{}'", line)))
-                            .expect("failed to emit event");
+                        let _ = app_handle.emit("message", Some(format!("'{:?}'", line)));
                         // 写入 stdin
                         child.write("message from Rust\n".as_bytes()).unwrap();
                     }
