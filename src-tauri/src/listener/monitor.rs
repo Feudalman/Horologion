@@ -26,60 +26,52 @@ impl EventListener {
         Ok(())
     }
 
+    /// 获取当前时间戳和窗口信息
+    fn get_event_context() -> (String, String) {
+        // 获取当前时间
+        let timestamp: DateTime<Local> = Local::now();
+        let time_str = timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+
+        // 获取当前活动窗口信息
+        let window_info = get_current_window_info();
+        let window_json = window_info
+            .map(|w| w.to_json())
+            .unwrap_or_else(|| "null".to_string());
+
+        (time_str, window_json)
+    }
+
+    /// 输出事件数据
+    fn output_event(event_type: &str, event_detail: &str, time_str: &str, window_json: &str) {
+        let event_data = format!("{}|{}:{}|Window:{}", time_str, event_type, event_detail, window_json);
+        println!("{}", event_data);
+        io::stdout().flush().unwrap();
+    }
+
     /// 监听回调
     fn callback(event: Event) {
         let result = std::panic::catch_unwind(|| {
-            // 获取当前时间
-            let timestamp: DateTime<Local> = Local::now();
-            let time_str = timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
-
-            // 获取当前活动窗口信息
-            let window_info = get_current_window_info();
-            let window_json = window_info
-                .map(|w| w.to_json())
-                .unwrap_or_else(|| "null".to_string());
+            let (time_str, window_json) = Self::get_event_context();
 
             match event.event_type {
                 EventType::KeyPress(key) => {
-                    let event_data =
-                        format!("{}|KeyPress:{:?}|Window:{}", time_str, key, window_json);
-                    println!("{}", event_data);
-                    io::stdout().flush().unwrap();
+                    Self::output_event("KeyPress", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::KeyRelease(key) => {
-                    let event_data =
-                        format!("{}|KeyRelease:{:?}|Window:{}", time_str, key, window_json);
-                    println!("{}", event_data);
-                    io::stdout().flush().unwrap();
+                    Self::output_event("KeyRelease", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::ButtonPress(button) => {
-                    let event_data = format!(
-                        "{}|ButtonPress:{:?}|Window:{}",
-                        time_str, button, window_json
-                    );
-                    println!("{}", event_data);
-                    io::stdout().flush().unwrap();
+                    Self::output_event("ButtonPress", &format!("{:?}", button), &time_str, &window_json);
                 }
                 EventType::ButtonRelease(button) => {
-                    let event_data = format!(
-                        "{}|ButtonRelease:{:?}|Window:{}",
-                        time_str, button, window_json
-                    );
-                    println!("{}", event_data);
-                    io::stdout().flush().unwrap();
+                    Self::output_event("ButtonRelease", &format!("{:?}", button), &time_str, &window_json);
                 }
                 EventType::MouseMove { x: _, y: _ } => {
                     // 鼠标移动事件太频繁，可以选择性记录
-                    // let event_data = format!("{}|MouseMove:{}:{}|Window:{}", time_str, x, y, window_json);
-                    // println!("{}", event_data);
+                    // Self::output_event("MouseMove", &format!("{}:{}", x, y), &time_str, &window_json);
                 }
                 EventType::Wheel { delta_x, delta_y } => {
-                    let event_data = format!(
-                        "{}|Wheel:{}:{}|Window:{}",
-                        time_str, delta_x, delta_y, window_json
-                    );
-                    println!("{}", event_data);
-                    io::stdout().flush().unwrap();
+                    Self::output_event("Wheel", &format!("{}:{}", delta_x, delta_y), &time_str, &window_json);
                 }
             }
         });
