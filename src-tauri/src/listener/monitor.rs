@@ -55,6 +55,11 @@ impl EventListener {
     /// 监听回调
     fn callback(event: Event) {
         let result = std::panic::catch_unwind(|| {
+            // 鼠标移动事件太频繁，直接跳过处理
+            if matches!(event.event_type, EventType::MouseMove { .. }) {
+                return;
+            }
+
             let (time_str, window_json, _) = Self::get_event_context();
 
             match event.event_type {
@@ -86,7 +91,7 @@ impl EventListener {
                     );
                 }
                 EventType::MouseMove { x: _, y: _ } => {
-                    // 鼠标移动事件太频繁，可以选择性记录
+                    // 这个分支永远不会执行，因为上面已经提前返回了
                 }
                 EventType::Wheel { delta_x, delta_y } => {
                     Self::output_event(
