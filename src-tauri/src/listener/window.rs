@@ -8,9 +8,9 @@ pub struct WindowInfo {
     pub title: String,
     pub app_name: String,
     pub process_path: String,
-    pub process_id: u32,
-    pub position: (i32, i32),
-    pub size: (u32, u32),
+    pub process_id: u64,
+    pub position: (f64, f64),
+    pub size: (f64, f64),
 }
 
 impl WindowInfo {
@@ -41,9 +41,9 @@ pub fn get_current_window_info() -> Option<WindowInfo> {
             title: active_window.title,
             app_name: active_window.app_name,
             process_path: active_window.process_path.to_string_lossy().to_string(),
-            process_id: active_window.process_id as u32,
-            position: (active_window.position.x as i32, active_window.position.y as i32),
-            size: (active_window.position.width as u32, active_window.position.height as u32),
+            process_id: active_window.process_id,
+            position: (active_window.position.x, active_window.position.y),
+            size: (active_window.position.width, active_window.position.height),
         }),
         Err(e) => {
             warn!("Failed to get active window: {:?}", e);
