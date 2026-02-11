@@ -1,5 +1,5 @@
 use active_win_pos_rs::get_active_window;
-use log::{error, warn};
+use log::warn;
 use serde_json::json;
 
 /// 窗口信息结构体
@@ -8,9 +8,9 @@ pub struct WindowInfo {
     pub title: String,
     pub app_name: String,
     pub process_path: String,
-    pub process_id: u32,
-    pub position: (i32, i32),
-    pub size: (u32, u32),
+    pub process_id: u64,
+    pub position: (f64, f64),
+    pub size: (f64, f64),
 }
 
 impl WindowInfo {
@@ -29,25 +29,24 @@ impl WindowInfo {
                 "width": self.size.0,
                 "height": self.size.1
             }
-        }).to_string()
+        })
+        .to_string()
     }
 }
 
 /// 获取当前活动窗口信息
 pub fn get_current_window_info() -> Option<WindowInfo> {
     match get_active_window() {
-        Ok(active_window) => {
-            Some(WindowInfo {
-                title: active_window.title,
-                app_name: active_window.app_name,
-                process_path: active_window.process_path,
-                process_id: active_window.process_id,
-                position: (active_window.position.x, active_window.position.y),
-                size: (active_window.position.width, active_window.position.height),
-            })
-        }
+        Ok(active_window) => Some(WindowInfo {
+            title: active_window.title,
+            app_name: active_window.app_name,
+            process_path: active_window.process_path.to_string_lossy().to_string(),
+            process_id: active_window.process_id,
+            position: (active_window.position.x, active_window.position.y),
+            size: (active_window.position.width, active_window.position.height),
+        }),
         Err(e) => {
-            warn!("Failed to get active window: {}", e);
+            warn!("Failed to get active window: {:?}", e);
             None
         }
     }
