@@ -23,4 +23,5 @@ jobs:
             github_action_config.auto_improve: "false"
             # model config
             config.model: "deepseek/deepseek-chat"
-            config.key: ${{ secrets.DEEPSEEK_KEY }}
+            config.fallback_models: "deepseek/deepseek-chat"
+            DEEPSEEK.KEY: ${{ secrets.DEEPSEEK_KEY }}
