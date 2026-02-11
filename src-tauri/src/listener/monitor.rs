@@ -64,11 +64,16 @@ impl EventListener {
 
             match event.event_type {
                 EventType::KeyPress(key) => {
-                    Self::output_event("KeyPress", &format!("{:?}", key), &time_str, &window_json);
+                    Self::output_event(
+                        "<KeyPress>",
+                        &format!("{:?}", key),
+                        &time_str,
+                        &window_json,
+                    );
                 }
                 EventType::KeyRelease(key) => {
                     Self::output_event(
-                        "KeyRelease",
+                        "<KeyRelease>",
                         &format!("{:?}", key),
                         &time_str,
                         &window_json,
@@ -76,7 +81,7 @@ impl EventListener {
                 }
                 EventType::ButtonPress(button) => {
                     Self::output_event(
-                        "ButtonPress",
+                        "<ButtonPress>",
                         &format!("{:?}", button),
                         &time_str,
                         &window_json,
@@ -84,7 +89,7 @@ impl EventListener {
                 }
                 EventType::ButtonRelease(button) => {
                     Self::output_event(
-                        "ButtonRelease",
+                        "<ButtonRelease>",
                         &format!("{:?}", button),
                         &time_str,
                         &window_json,
@@ -95,7 +100,7 @@ impl EventListener {
                 }
                 EventType::Wheel { delta_x, delta_y } => {
                     Self::output_event(
-                        "Wheel",
+                        "<WheelScroll>",
                         &format!("{}:{}", delta_x, delta_y),
                         &time_str,
                         &window_json,
