@@ -14,12 +14,13 @@ impl EventListener {
     }
 
     /// 启动监听
-    pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn start(&self) -> Result<(), String> {
         info!("Input listener process started");
         
         if let Err(error) = listen(Self::callback) {
-            error!("Listening error: {:?}", error);
-            return Err(Box::new(error));
+            let error_msg = format!("Listening error: {:?}", error);
+            error!("{}", error_msg);
+            return Err(error_msg);
         }
         
         Ok(())
