@@ -13,7 +13,6 @@ fn main() {
 }
 
 fn build_listener() {
-    let listener_dir = Path::new("../src-listener");
     let bin_dir = Path::new("bin");
 
     // 确保 bin 目录存在
@@ -48,7 +47,14 @@ fn build_listener() {
     // 构建 listener - 在 workspace 中使用 -p 参数指定包
     let mut cmd = Command::new("cargo");
     cmd.current_dir("..") // 回到 workspace 根目录
-        .args(&["build", "-p", "listener", "--release", "--target", &target_triple]);
+        .args(&[
+            "build",
+            "-p",
+            "listener",
+            "--release",
+            "--target",
+            &target_triple,
+        ]);
 
     let output = cmd
         .output()
