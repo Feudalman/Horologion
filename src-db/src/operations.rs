@@ -2,7 +2,7 @@
 
 use crate::connection::{DatabaseManager, DatabaseResult};
 use crate::schema::{InputEvent, WindowRecord, AppUsageStats};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, TimeZone};
 use duckdb::params;
 
 /// 输入事件操作
@@ -27,7 +27,7 @@ impl InputEventOps {
                 event.window_title,
                 event.window_app_name,
                 event.window_process_path,
-                event.window_process_id,
+                event.window_process_id.map(|id| id as i64),
                 event.window_position_x,
                 event.window_position_y,
                 event.window_size_width,
@@ -60,7 +60,7 @@ impl InputEventOps {
                     event.window_title,
                     event.window_app_name,
                     event.window_process_path,
-                    event.window_process_id,
+                    event.window_process_id.map(|id| id as i64),
                     event.window_position_x,
                     event.window_position_y,
                     event.window_size_width,
@@ -92,15 +92,17 @@ impl InputEventOps {
             let rows = stmt.query_map(
                 params![start.naive_local(), end.naive_local()],
                 |row| {
+                    let naive_dt = row.get(1)?;
+                    let timestamp = Local.from_utc_datetime(&naive_dt);
                     Ok(InputEvent {
                         id: Some(row.get(0)?),
-                        timestamp: DateTime::from_naive_utc_and_offset(row.get(1)?, Local::now().offset().clone()),
+                        timestamp,
                         event_type: row.get(2)?,
                         event_detail: row.get(3)?,
                         window_title: row.get(4)?,
                         window_app_name: row.get(5)?,
                         window_process_path: row.get(6)?,
-                        window_process_id: row.get(7)?,
+                        window_process_id: row.get::<_, Option<i64>>(7)?.map(|id| id as u64),
                         window_position_x: row.get(8)?,
                         window_position_y: row.get(9)?,
                         window_size_width: row.get(10)?,
@@ -128,15 +130,17 @@ impl InputEventOps {
             "#)?;
             
             let rows = stmt.query_map([app_name], |row| {
+                let naive_dt = row.get(1)?;
+                let timestamp = Local.from_utc_datetime(&naive_dt);
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
-                    timestamp: DateTime::from_naive_utc_and_offset(row.get(1)?, Local::now().offset().clone()),
+                    timestamp,
                     event_type: row.get(2)?,
                     event_detail: row.get(3)?,
                     window_title: row.get(4)?,
                     window_app_name: row.get(5)?,
                     window_process_path: row.get(6)?,
-                    window_process_id: row.get(7)?,
+                    window_process_id: row.get::<_, Option<i64>>(7)?.map(|id| id as u64),
                     window_position_x: row.get(8)?,
                     window_position_y: row.get(9)?,
                     window_size_width: row.get(10)?,
@@ -169,7 +173,7 @@ impl WindowRecordOps {
                 record.title,
                 record.app_name,
                 record.process_path,
-                record.process_id,
+                record.process_id as i64,
                 record.position_x,
                 record.position_y,
                 record.size_width,
@@ -194,13 +198,15 @@ impl WindowRecordOps {
             "#)?;
             
             let rows = stmt.query_map([limit], |row| {
+                let naive_dt = row.get(1)?;
+                let timestamp = Local.from_utc_datetime(&naive_dt);
                 Ok(WindowRecord {
                     id: Some(row.get(0)?),
-                    timestamp: DateTime::from_naive_utc_and_offset(row.get(1)?, Local::now().offset().clone()),
+                    timestamp,
                     title: row.get(2)?,
                     app_name: row.get(3)?,
                     process_path: row.get(4)?,
-                    process_id: row.get(5)?,
+                    process_id: row.get::<_, i64>(5)? as u64,
                     position_x: row.get(6)?,
                     position_y: row.get(7)?,
                     size_width: row.get(8)?,
@@ -282,15 +288,19 @@ impl AppUsageStatsOps {
             "#)?;
             
             let rows = stmt.query_map([limit], |row| {
+                let last_used_naive = row.get(5)?;
+                let created_at_naive = row.get(6)?;
+                let updated_at_naive = row.get(7)?;
+                
                 Ok(AppUsageStats {
                     id: Some(row.get(0)?),
                     app_name: row.get(1)?,
                     process_path: row.get(2)?,
                     total_time_seconds: row.get(3)?,
                     session_count: row.get(4)?,
-                    last_used: DateTime::from_naive_utc_and_offset(row.get(5)?, Local::now().offset().clone()),
-                    created_at: DateTime::from_naive_utc_and_offset(row.get(6)?, Local::now().offset().clone()),
-                    updated_at: DateTime::from_naive_utc_and_offset(row.get(7)?, Local::now().offset().clone()),
+                    last_used: Local.from_utc_datetime(&last_used_naive),
+                    created_at: Local.from_utc_datetime(&created_at_naive),
+                    updated_at: Local.from_utc_datetime(&updated_at_naive),
                 })
             })?;
             
