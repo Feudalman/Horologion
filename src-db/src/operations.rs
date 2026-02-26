@@ -95,29 +95,39 @@ impl InputEventOps {
             "#,
             )?;
 
-            let rows = stmt.query_map(params![
-                start.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
-                end.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
-            ], |row| {
-                let timestamp_str: String = row.get(1)?;
-                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
-                    .with_timezone(&Local);
-                Ok(InputEvent {
-                    id: Some(row.get(0)?),
-                    timestamp,
-                    event_type: row.get(2)?,
-                    event_detail: row.get(3)?,
-                    window_title: row.get(4)?,
-                    window_app_name: row.get(5)?,
-                    window_process_path: row.get(6)?,
-                    window_process_id: row.get::<_, Option<i64>>(7)?.map(|id| id as u64),
-                    window_position_x: row.get(8)?,
-                    window_position_y: row.get(9)?,
-                    window_size_width: row.get(10)?,
-                    window_size_height: row.get(11)?,
-                })
-            })?;
+            let rows = stmt.query_map(
+                params![
+                    start.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                    end.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+                ],
+                |row| {
+                    let timestamp_str: String = row.get(1)?;
+                    let timestamp =
+                        DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                            .map_err(|e| {
+                                duckdb::Error::InvalidColumnType(
+                                    1,
+                                    "timestamp".to_string(),
+                                    format!("Parse error: {}", e),
+                                )
+                            })?
+                            .with_timezone(&Local);
+                    Ok(InputEvent {
+                        id: Some(row.get(0)?),
+                        timestamp,
+                        event_type: row.get(2)?,
+                        event_detail: row.get(3)?,
+                        window_title: row.get(4)?,
+                        window_app_name: row.get(5)?,
+                        window_process_path: row.get(6)?,
+                        window_process_id: row.get::<_, Option<i64>>(7)?.map(|id| id as u64),
+                        window_position_x: row.get(8)?,
+                        window_position_y: row.get(9)?,
+                        window_size_width: row.get(10)?,
+                        window_size_height: row.get(11)?,
+                    })
+                },
+            )?;
 
             let events: Result<Vec<_>, _> = rows.collect();
             Ok(events?)
@@ -142,7 +152,13 @@ impl InputEventOps {
             let rows = stmt.query_map([app_name], |row| {
                 let timestamp_str: String = row.get(1)?;
                 let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
+                    .map_err(|e| {
+                        duckdb::Error::InvalidColumnType(
+                            1,
+                            "timestamp".to_string(),
+                            format!("Parse error: {}", e),
+                        )
+                    })?
                     .with_timezone(&Local);
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
@@ -216,7 +232,13 @@ impl WindowRecordOps {
             let rows = stmt.query_map([limit], |row| {
                 let timestamp_str: String = row.get(1)?;
                 let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
+                    .map_err(|e| {
+                        duckdb::Error::InvalidColumnType(
+                            1,
+                            "timestamp".to_string(),
+                            format!("Parse error: {}", e),
+                        )
+                    })?
                     .with_timezone(&Local);
                 Ok(WindowRecord {
                     id: Some(row.get(0)?),
@@ -317,13 +339,31 @@ impl AppUsageStatsOps {
                 let updated_at_str: String = row.get(7)?;
 
                 let last_used = DateTime::parse_from_str(&last_used_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(5, "last_used".to_string(), format!("Parse error: {}", e)))?
+                    .map_err(|e| {
+                        duckdb::Error::InvalidColumnType(
+                            5,
+                            "last_used".to_string(),
+                            format!("Parse error: {}", e),
+                        )
+                    })?
                     .with_timezone(&Local);
                 let created_at = DateTime::parse_from_str(&created_at_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(6, "created_at".to_string(), format!("Parse error: {}", e)))?
+                    .map_err(|e| {
+                        duckdb::Error::InvalidColumnType(
+                            6,
+                            "created_at".to_string(),
+                            format!("Parse error: {}", e),
+                        )
+                    })?
                     .with_timezone(&Local);
                 let updated_at = DateTime::parse_from_str(&updated_at_str, "%Y-%m-%d %H:%M:%S%.3f")
-                    .map_err(|e| duckdb::Error::InvalidColumnType(7, "updated_at".to_string(), format!("Parse error: {}", e)))?
+                    .map_err(|e| {
+                        duckdb::Error::InvalidColumnType(
+                            7,
+                            "updated_at".to_string(),
+                            format!("Parse error: {}", e),
+                        )
+                    })?
                     .with_timezone(&Local);
 
                 Ok(AppUsageStats {
