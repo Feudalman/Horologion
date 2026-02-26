@@ -23,7 +23,7 @@ impl InputEventOps {
             )?;
 
             stmt.execute(params![
-                event.timestamp.naive_local(),
+                event.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 event.event_type,
                 event.event_detail,
                 event.window_title,
@@ -58,7 +58,7 @@ impl InputEventOps {
 
             for event in events {
                 stmt.execute(params![
-                    event.timestamp.naive_local(),
+                    event.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                     event.event_type,
                     event.event_detail,
                     event.window_title,
@@ -95,9 +95,14 @@ impl InputEventOps {
             "#,
             )?;
 
-            let rows = stmt.query_map(params![start.naive_local(), end.naive_local()], |row| {
-                let naive_dt = row.get(1)?;
-                let timestamp = Local.from_utc_datetime(&naive_dt);
+            let rows = stmt.query_map(params![
+                start.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                end.format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+            ], |row| {
+                let timestamp_str: String = row.get(1)?;
+                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -135,8 +140,10 @@ impl InputEventOps {
             )?;
 
             let rows = stmt.query_map([app_name], |row| {
-                let naive_dt = row.get(1)?;
-                let timestamp = Local.from_utc_datetime(&naive_dt);
+                let timestamp_str: String = row.get(1)?;
+                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -176,7 +183,7 @@ impl WindowRecordOps {
             )?;
 
             stmt.execute(params![
-                record.timestamp.naive_local(),
+                record.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 record.title,
                 record.app_name,
                 record.process_path,
@@ -207,8 +214,10 @@ impl WindowRecordOps {
             )?;
 
             let rows = stmt.query_map([limit], |row| {
-                let naive_dt = row.get(1)?;
-                let timestamp = Local.from_utc_datetime(&naive_dt);
+                let timestamp_str: String = row.get(1)?;
+                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(1, "timestamp".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
                 Ok(WindowRecord {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -258,8 +267,8 @@ impl AppUsageStatsOps {
 
             let affected = stmt.execute(params![
                 session_time_seconds,
-                now.naive_local(),
-                now.naive_local(),
+                now.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                now.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 app_name,
                 process_path,
             ])?;
@@ -279,9 +288,9 @@ impl AppUsageStatsOps {
                     app_name,
                     process_path,
                     session_time_seconds,
-                    now.naive_local(),
-                    now.naive_local(),
-                    now.naive_local(),
+                    now.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                    now.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                    now.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 ])?;
             }
 
@@ -303,9 +312,19 @@ impl AppUsageStatsOps {
             )?;
 
             let rows = stmt.query_map([limit], |row| {
-                let last_used_naive = row.get(5)?;
-                let created_at_naive = row.get(6)?;
-                let updated_at_naive = row.get(7)?;
+                let last_used_str: String = row.get(5)?;
+                let created_at_str: String = row.get(6)?;
+                let updated_at_str: String = row.get(7)?;
+
+                let last_used = DateTime::parse_from_str(&last_used_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(5, "last_used".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
+                let created_at = DateTime::parse_from_str(&created_at_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(6, "created_at".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
+                let updated_at = DateTime::parse_from_str(&updated_at_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    .map_err(|e| duckdb::Error::InvalidColumnType(7, "updated_at".to_string(), format!("Parse error: {}", e)))?
+                    .with_timezone(&Local);
 
                 Ok(AppUsageStats {
                     id: Some(row.get(0)?),
@@ -313,9 +332,9 @@ impl AppUsageStatsOps {
                     process_path: row.get(2)?,
                     total_time_seconds: row.get(3)?,
                     session_count: row.get(4)?,
-                    last_used: Local.from_utc_datetime(&last_used_naive),
-                    created_at: Local.from_utc_datetime(&created_at_naive),
-                    updated_at: Local.from_utc_datetime(&updated_at_naive),
+                    last_used,
+                    created_at,
+                    updated_at,
                 })
             })?;
 
