@@ -10,7 +10,7 @@ pub struct InputEventOps;
 
 impl InputEventOps {
     /// 插入输入事件
-    pub fn insert(db: &DatabaseManager, event: &InputEvent) -> DatabaseResult<i64> {
+    pub fn insert(db: &DatabaseManager, event: &InputEvent) -> DatabaseResult<usize> {
         db.with_connection(|conn| {
             let mut stmt = conn.prepare(
                 r#"
@@ -22,7 +22,7 @@ impl InputEventOps {
             "#,
             )?;
 
-            stmt.execute(params![
+            let affected = stmt.execute(params![
                 event.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 event.event_type,
                 event.event_detail,
@@ -36,8 +36,7 @@ impl InputEventOps {
                 event.window_size_height,
             ])?;
 
-            let id = conn.last_insert_rowid();
-            Ok(id)
+            Ok(affected)
         })
     }
 
@@ -102,16 +101,20 @@ impl InputEventOps {
                 ],
                 |row| {
                     let timestamp_str: String = row.get(1)?;
-                    let timestamp =
-                        DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
-                            .map_err(|e| {
-                                duckdb::Error::InvalidColumnType(
-                                    1,
-                                    "timestamp".to_string(),
-                                    format!("Parse error: {}", e),
-                                )
-                            })?
-                            .with_timezone(&Local);
+                    let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                        .map_err(|e| {
+                            duckdb::Error::InvalidColumnType(
+                                1,
+                                "timestamp".to_string(),
+                                format!("Parse error: {}", e),
+                            )
+                        })?;
+                    let timestamp = Local.from_local_datetime(&timestamp).single()
+                        .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                            1,
+                            "timestamp".to_string(),
+                            "Invalid local datetime".to_string(),
+                        ))?;
                     Ok(InputEvent {
                         id: Some(row.get(0)?),
                         timestamp,
@@ -151,15 +154,20 @@ impl InputEventOps {
 
             let rows = stmt.query_map([app_name], |row| {
                 let timestamp_str: String = row.get(1)?;
-                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
                         duckdb::Error::InvalidColumnType(
                             1,
                             "timestamp".to_string(),
                             format!("Parse error: {}", e),
                         )
-                    })?
-                    .with_timezone(&Local);
+                    })?;
+                let timestamp = Local.from_local_datetime(&timestamp).single()
+                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                        1,
+                        "timestamp".to_string(),
+                        "Invalid local datetime".to_string(),
+                    ))?;
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -187,7 +195,7 @@ pub struct WindowRecordOps;
 
 impl WindowRecordOps {
     /// 插入窗口记录
-    pub fn insert(db: &DatabaseManager, record: &WindowRecord) -> DatabaseResult<i64> {
+    pub fn insert(db: &DatabaseManager, record: &WindowRecord) -> DatabaseResult<usize> {
         db.with_connection(|conn| {
             let mut stmt = conn.prepare(
                 r#"
@@ -198,7 +206,7 @@ impl WindowRecordOps {
             "#,
             )?;
 
-            stmt.execute(params![
+            let affected = stmt.execute(params![
                 record.timestamp.format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
                 record.title,
                 record.app_name,
@@ -211,8 +219,7 @@ impl WindowRecordOps {
                 record.is_active,
             ])?;
 
-            let id = conn.last_insert_rowid();
-            Ok(id)
+            Ok(affected)
         })
     }
 
@@ -231,15 +238,20 @@ impl WindowRecordOps {
 
             let rows = stmt.query_map([limit], |row| {
                 let timestamp_str: String = row.get(1)?;
-                let timestamp = DateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
+                let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
                         duckdb::Error::InvalidColumnType(
                             1,
                             "timestamp".to_string(),
                             format!("Parse error: {}", e),
                         )
-                    })?
-                    .with_timezone(&Local);
+                    })?;
+                let timestamp = Local.from_local_datetime(&timestamp).single()
+                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                        1,
+                        "timestamp".to_string(),
+                        "Invalid local datetime".to_string(),
+                    ))?;
                 Ok(WindowRecord {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -338,33 +350,50 @@ impl AppUsageStatsOps {
                 let created_at_str: String = row.get(6)?;
                 let updated_at_str: String = row.get(7)?;
 
-                let last_used = DateTime::parse_from_str(&last_used_str, "%Y-%m-%d %H:%M:%S%.3f")
+                let last_used_naive = chrono::NaiveDateTime::parse_from_str(&last_used_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
                         duckdb::Error::InvalidColumnType(
                             5,
                             "last_used".to_string(),
                             format!("Parse error: {}", e),
                         )
-                    })?
-                    .with_timezone(&Local);
-                let created_at = DateTime::parse_from_str(&created_at_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    })?;
+                let last_used = Local.from_local_datetime(&last_used_naive).single()
+                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                        5,
+                        "last_used".to_string(),
+                        "Invalid local datetime".to_string(),
+                    ))?;
+
+                let created_at_naive = chrono::NaiveDateTime::parse_from_str(&created_at_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
                         duckdb::Error::InvalidColumnType(
                             6,
                             "created_at".to_string(),
                             format!("Parse error: {}", e),
                         )
-                    })?
-                    .with_timezone(&Local);
-                let updated_at = DateTime::parse_from_str(&updated_at_str, "%Y-%m-%d %H:%M:%S%.3f")
+                    })?;
+                let created_at = Local.from_local_datetime(&created_at_naive).single()
+                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                        6,
+                        "created_at".to_string(),
+                        "Invalid local datetime".to_string(),
+                    ))?;
+
+                let updated_at_naive = chrono::NaiveDateTime::parse_from_str(&updated_at_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
                         duckdb::Error::InvalidColumnType(
                             7,
                             "updated_at".to_string(),
                             format!("Parse error: {}", e),
                         )
-                    })?
-                    .with_timezone(&Local);
+                    })?;
+                let updated_at = Local.from_local_datetime(&updated_at_naive).single()
+                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
+                        7,
+                        "updated_at".to_string(),
+                        "Invalid local datetime".to_string(),
+                    ))?;
 
                 Ok(AppUsageStats {
                     id: Some(row.get(0)?),
@@ -412,8 +441,8 @@ mod tests {
             window_size_height: Some(600.0),
         };
 
-        let id = InputEventOps::insert(&db, &event).unwrap();
-        assert!(id > 0);
+        let affected = InputEventOps::insert(&db, &event).unwrap();
+        assert!(affected > 0);
 
         let events = InputEventOps::find_by_app(&db, "TestApp").unwrap();
         assert_eq!(events.len(), 1);
