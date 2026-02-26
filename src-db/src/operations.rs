@@ -103,18 +103,18 @@ impl InputEventOps {
                     let timestamp_str: String = row.get(1)?;
                     let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
                         .map_err(|e| {
-                            duckdb::Error::InvalidColumnType(
-                                1,
-                                "timestamp".to_string(),
-                                format!("Parse error: {}", e),
+                            duckdb::Error::SqliteFailure(
+                                duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                                Some(format!("Parse error: {}", e))
                             )
                         })?;
                     let timestamp = Local.from_local_datetime(&timestamp).single()
-                        .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                            1,
-                            "timestamp".to_string(),
-                            "Invalid local datetime".to_string(),
-                        ))?;
+                        .ok_or_else(|| {
+                            duckdb::Error::SqliteFailure(
+                                duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                                Some("Invalid local datetime".to_string())
+                            )
+                        })?;
                     Ok(InputEvent {
                         id: Some(row.get(0)?),
                         timestamp,
@@ -156,18 +156,18 @@ impl InputEventOps {
                 let timestamp_str: String = row.get(1)?;
                 let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
-                        duckdb::Error::InvalidColumnType(
-                            1,
-                            "timestamp".to_string(),
-                            format!("Parse error: {}", e),
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some(format!("Parse error: {}", e))
                         )
                     })?;
                 let timestamp = Local.from_local_datetime(&timestamp).single()
-                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                        1,
-                        "timestamp".to_string(),
-                        "Invalid local datetime".to_string(),
-                    ))?;
+                    .ok_or_else(|| {
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some("Invalid local datetime".to_string())
+                        )
+                    })?;
                 Ok(InputEvent {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -240,18 +240,18 @@ impl WindowRecordOps {
                 let timestamp_str: String = row.get(1)?;
                 let timestamp = chrono::NaiveDateTime::parse_from_str(&timestamp_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
-                        duckdb::Error::InvalidColumnType(
-                            1,
-                            "timestamp".to_string(),
-                            format!("Parse error: {}", e),
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some(format!("Parse error: {}", e))
                         )
                     })?;
                 let timestamp = Local.from_local_datetime(&timestamp).single()
-                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                        1,
-                        "timestamp".to_string(),
-                        "Invalid local datetime".to_string(),
-                    ))?;
+                    .ok_or_else(|| {
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some("Invalid local datetime".to_string())
+                        )
+                    })?;
                 Ok(WindowRecord {
                     id: Some(row.get(0)?),
                     timestamp,
@@ -352,48 +352,48 @@ impl AppUsageStatsOps {
 
                 let last_used_naive = chrono::NaiveDateTime::parse_from_str(&last_used_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
-                        duckdb::Error::InvalidColumnType(
-                            5,
-                            "last_used".to_string(),
-                            format!("Parse error: {}", e),
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some(format!("Parse error: {}", e))
                         )
                     })?;
                 let last_used = Local.from_local_datetime(&last_used_naive).single()
-                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                        5,
-                        "last_used".to_string(),
-                        "Invalid local datetime".to_string(),
-                    ))?;
+                    .ok_or_else(|| {
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some("Invalid local datetime".to_string())
+                        )
+                    })?;
 
                 let created_at_naive = chrono::NaiveDateTime::parse_from_str(&created_at_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
-                        duckdb::Error::InvalidColumnType(
-                            6,
-                            "created_at".to_string(),
-                            format!("Parse error: {}", e),
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some(format!("Parse error: {}", e))
                         )
                     })?;
                 let created_at = Local.from_local_datetime(&created_at_naive).single()
-                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                        6,
-                        "created_at".to_string(),
-                        "Invalid local datetime".to_string(),
-                    ))?;
+                    .ok_or_else(|| {
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some("Invalid local datetime".to_string())
+                        )
+                    })?;
 
                 let updated_at_naive = chrono::NaiveDateTime::parse_from_str(&updated_at_str, "%Y-%m-%d %H:%M:%S%.3f")
                     .map_err(|e| {
-                        duckdb::Error::InvalidColumnType(
-                            7,
-                            "updated_at".to_string(),
-                            format!("Parse error: {}", e),
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some(format!("Parse error: {}", e))
                         )
                     })?;
                 let updated_at = Local.from_local_datetime(&updated_at_naive).single()
-                    .ok_or_else(|| duckdb::Error::InvalidColumnType(
-                        7,
-                        "updated_at".to_string(),
-                        "Invalid local datetime".to_string(),
-                    ))?;
+                    .ok_or_else(|| {
+                        duckdb::Error::SqliteFailure(
+                            duckdb::ffi::Error::new(duckdb::ffi::SQLITE_MISMATCH),
+                            Some("Invalid local datetime".to_string())
+                        )
+                    })?;
 
                 Ok(AppUsageStats {
                     id: Some(row.get(0)?),
