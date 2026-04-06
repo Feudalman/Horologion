@@ -43,12 +43,12 @@ impl EventListener {
     }
 
     /// 输出事件数据
-    fn output_event(event_type: &str, event_detail: &str, time_str: &str, window_json: &str) {
+    fn println(event_type: &str, event_detail: &str, time_str: &str, window_json: &str) {
         let event_data = format!(
-            "{}|{}:{}|Window:{}",
+            "{} --- {}: {} --- Window: {}",
             time_str, event_type, event_detail, window_json
         );
-        println!("{}", event_data);
+        println!("{}\n", event_data);
         io::stdout().flush().unwrap();
     }
 
@@ -64,19 +64,34 @@ impl EventListener {
 
             match event.event_type {
                 EventType::KeyPress(key) => {
-                    Self::output_event("KeyPress", &format!("{:?}", key), &time_str, &window_json);
+                    Self::println("KeyPress", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::KeyRelease(key) => {
-                    Self::output_event("KeyRelease", &format!("{:?}", key), &time_str, &window_json);
+                    Self::println("KeyRelease", &format!("{:?}", key), &time_str, &window_json);
                 }
                 EventType::ButtonPress(button) => {
-                    Self::output_event("ButtonPress", &format!("{:?}", button), &time_str, &window_json);
+                    Self::println(
+                        "ButtonPress",
+                        &format!("{:?}", button),
+                        &time_str,
+                        &window_json,
+                    );
                 }
                 EventType::ButtonRelease(button) => {
-                    Self::output_event("ButtonRelease", &format!("{:?}", button), &time_str, &window_json);
+                    Self::println(
+                        "ButtonRelease",
+                        &format!("{:?}", button),
+                        &time_str,
+                        &window_json,
+                    );
                 }
                 EventType::Wheel { delta_x, delta_y } => {
-                    Self::output_event("Wheel", &format!("delta_x:{}, delta_y:{}", delta_x, delta_y), &time_str, &window_json);
+                    Self::println(
+                        "Wheel",
+                        &format!("delta_x:{}, delta_y:{}", delta_x, delta_y),
+                        &time_str,
+                        &window_json,
+                    );
                 }
                 _ => {}
             }
