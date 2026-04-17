@@ -20,6 +20,8 @@ bin/
 #.idea/
 .aider*
 
+playground/
+
 .idea/*
 
 # Node.js dependencies

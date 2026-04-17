@@ -4,5 +4,5 @@
 
 pub mod api;
 pub mod db;
-pub mod error;
+pub mod errors;
 pub mod models;

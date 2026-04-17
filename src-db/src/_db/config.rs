@@ -161,9 +161,7 @@ mod tests {
         let config = DatabaseConfig::new(RunMode::Development).unwrap();
         assert!(!config.is_memory);
         assert!(config.db_path.is_some());
-        assert!(config
-            .connection_string
-            .contains("playground"));
+        assert!(config.connection_string.contains("playground"));
         assert!(config.connection_string.contains("horologion.db"));
     }
 
@@ -242,10 +240,7 @@ synchronous = "FULL"
         assert_eq!(config.connection_string, "/test/custom/db.db");
         assert!(!config.is_memory);
         assert_eq!(config.performance.cache_size, Some(2000000));
-        assert_eq!(
-            config.performance.synchronous,
-            Some("FULL".to_string())
-        );
+        assert_eq!(config.performance.synchronous, Some("FULL".to_string()));
 
         // 清理
         fs::remove_dir_all(&temp_dir).unwrap();
