@@ -107,4 +107,27 @@ mod tests {
 
         assert_eq!(event_count, 1);
     }
+
+    #[test]
+    fn init_schema_requires_event_value() {
+        let config = DatabaseConfig::new(RunMode::Test).unwrap();
+        let conn = connect(&config).unwrap();
+
+        init_schema(&conn).unwrap();
+
+        let result = conn.execute_batch(
+            r#"
+            INSERT INTO input_events (
+                occurred_at,
+                event_kind
+            )
+            VALUES (
+                TIMESTAMPTZ '2026-04-18 00:00:00+00',
+                'wheel'
+            );
+            "#,
+        );
+
+        assert!(result.is_err());
+    }
 }

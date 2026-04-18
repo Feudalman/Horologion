@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS input_events (
             'wheel'
         )
     ),
-    event_value TEXT,
+    event_value TEXT NOT NULL,
     delta_x DOUBLE,
     delta_y DOUBLE,
     window_id BIGINT REFERENCES observed_windows(window_id),
