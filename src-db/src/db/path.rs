@@ -105,6 +105,9 @@ fn get_config_path_candidates() -> Vec<PathBuf> {
 /// 获取默认数据库路径
 ///
 /// 根据运行模式返回默认的数据库文件路径
+/// - Test 直接报错，因为不应该使用文件数据库，需要在调用前判断
+/// - Development 返回项目本地数据库路径
+/// - Production 返回系统数据目录或配置文件指定的目录
 pub fn get_default_db_path(mode: &RunMode) -> DatabaseResult<PathBuf> {
     match mode {
         RunMode::Test => Err(DatabaseError::InvalidConfig(
