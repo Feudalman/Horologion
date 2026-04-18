@@ -5,3 +5,7 @@
 pub mod config;
 pub mod connect;
 pub mod path;
+
+pub use config::{DatabaseConfig, DatabaseSource, DatabaseTarget};
+pub use connect::{connect, connect_from_env, DatabaseManager};
+pub use path::RunMode;

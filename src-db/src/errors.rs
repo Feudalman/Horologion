@@ -23,7 +23,7 @@ pub enum DatabaseError {
 
     /// 连接未初始化
     #[error("Connection not initialized")]
-    NotInitialized,
+    NotInitd,
 
     /// 路径未找到
     #[error("Path not found: {0}")]
