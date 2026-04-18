@@ -4,6 +4,7 @@ use std::process::Command;
 
 fn main() {
     // 告诉 Cargo 当 src-listener 目录下的文件发生变化时重新构建
+    // cargo: 开头的为指令，而不是简单的输出
     println!("cargo:rerun-if-changed=../src-listener");
 
     // 编译 listener
@@ -12,15 +13,16 @@ fn main() {
     tauri_build::build()
 }
 
+/// 编译 listener
 fn build_listener() {
     let bin_dir = Path::new("bin");
 
-    // 确保 bin 目录存在
+    // 确保 bin 目录存在，不存在则创建
     if !bin_dir.exists() {
         std::fs::create_dir_all(bin_dir).expect("Failed to create bin directory");
     }
 
-    // 获取目标平台信息
+    // 获取目标平台信息，sidecar 对于不同平台的可执行文件有命名要求
     let target_triple = env::var("TARGET").unwrap_or_else(|_| {
         // 如果没有设置 TARGET，使用当前平台
         if cfg!(target_os = "windows") {
