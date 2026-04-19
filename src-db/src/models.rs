@@ -6,7 +6,9 @@
 pub mod listener;
 pub mod schema;
 
-pub use listener::{InputEvent, InputEventKind, ObservedWindow};
+pub use listener::{
+    InputEvent, InputEventKind, InputEventRecord, ObservedWindow, ObservedWindowRecord,
+};
 pub use schema::{
     init_schema, SCHEMA_SQL, SCHEMA_VERSION, TABLE_INPUT_EVENTS, TABLE_OBSERVED_WINDOWS,
 };
