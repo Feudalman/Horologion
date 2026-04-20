@@ -17,7 +17,14 @@ fn main() {
     env_logger::init();
 
     // 创建并启动事件监听器
-    let listener = EventListener::new();
+    let listener = match EventListener::new() {
+        Ok(listener) => listener,
+        Err(error) => {
+            eprintln!("Failed to initialize listener: {}", error);
+            std::process::exit(1);
+        }
+    };
+
     if let Err(error) = listener.start() {
         eprintln!("Failed to start listener: {}", error);
         std::process::exit(1);
