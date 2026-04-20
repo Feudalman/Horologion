@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 
 import { router } from "@/app/router";
 import { ThemeProvider } from "@/lib/theme";
+import "@/lib/i18n";
 import "./App.css";
 
 const queryClient = new QueryClient({

@@ -7,6 +7,7 @@ import {
   Menu,
   Settings,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,29 +17,30 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    label: "Overview",
+    labelKey: "nav.overview",
     path: "/overview",
     icon: BarChart3,
   },
   {
-    label: "Settings",
+    labelKey: "nav.settings",
     path: "/settings",
     icon: Settings,
   },
 ];
 
-const pageTitles: Record<string, { title: string; subtitle: string }> = {
+const pageTitles: Record<string, { titleKey: string; subtitleKey: string }> = {
   "/overview": {
-    title: "Overview",
-    subtitle: "Activity capture, recent events, and app-level signal.",
+    titleKey: "page.overview.title",
+    subtitleKey: "page.overview.subtitle",
   },
   "/settings": {
-    title: "Settings",
-    subtitle: "Theme, runtime, version, and local database information.",
+    titleKey: "page.settings.title",
+    subtitleKey: "page.settings.subtitle",
   },
 };
 
 export function AppShell() {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
   const page = pageTitles[location.pathname] ?? pageTitles["/overview"];
@@ -47,7 +49,9 @@ export function AppShell() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
         <Button
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={
+            collapsed ? t("common.expandSidebar") : t("common.collapseSidebar")
+          }
           className="mr-2"
           onClick={() => setCollapsed((value) => !value)}
           size="icon"
@@ -62,16 +66,18 @@ export function AppShell() {
             <Activity className="size-4" />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">Horologion</div>
+            <div className="truncate text-sm font-semibold">
+              {t("common.brand")}
+            </div>
             <div className="hidden truncate text-xs text-muted-foreground sm:block">
-              Local activity timeline
+              {t("common.horologionSubtitle")}
             </div>
           </div>
         </div>
 
         <Badge className="hidden gap-1.5 sm:inline-flex" variant="success">
           <Circle className="size-2 fill-current" />
-          Listener ready
+          {t("common.listenerReady")}
         </Badge>
       </header>
 
@@ -96,7 +102,7 @@ export function AppShell() {
                 }
                 key={item.path}
                 to={item.path}
-                title={item.label}
+                title={t(item.labelKey)}
               >
                 <item.icon className="size-4 shrink-0" />
                 <span
@@ -106,7 +112,7 @@ export function AppShell() {
                     "max-sm:hidden",
                   )}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </span>
               </NavLink>
             ))}
@@ -122,7 +128,7 @@ export function AppShell() {
               >
                 <Database className="size-4 shrink-0" />
                 <span className={cn(collapsed && "hidden", "max-sm:hidden")}>
-                  Local DuckDB
+                  {t("common.localDuckDB")}
                 </span>
               </div>
             </div>
@@ -133,9 +139,11 @@ export function AppShell() {
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6">
             <div className="flex min-w-0 flex-col gap-1">
               <h1 className="truncate text-2xl font-semibold tracking-normal">
-                {page.title}
+                {t(page.titleKey)}
               </h1>
-              <p className="text-sm text-muted-foreground">{page.subtitle}</p>
+              <p className="text-sm text-muted-foreground">
+                {t(page.subtitleKey)}
+              </p>
             </div>
             <Outlet />
           </div>

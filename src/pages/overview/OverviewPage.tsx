@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   MousePointer,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,36 +28,29 @@ import {
   getActivitySummary,
   getAppStatus,
   listRecentEvents,
-  type InputEventPreview,
 } from "@/lib/mock-api";
 
-const eventKindLabel: Record<InputEventPreview["kind"], string> = {
-  key_press: "Key press",
-  key_release: "Key release",
-  button_press: "Button press",
-  button_release: "Button release",
-  wheel: "Wheel",
-};
-
-function formatDateTime(value?: string) {
+function formatDateTime(value: string | undefined, locale: string, emptyText: string) {
   if (!value) {
-    return "No events yet";
+    return emptyText;
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "medium",
   }).format(new Date(value));
 }
 
-function compactNumber(value?: number) {
-  return new Intl.NumberFormat("en-US", {
+function compactNumber(value: number | undefined, locale: string) {
+  return new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value ?? 0);
 }
 
 export function OverviewPage() {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language;
   const statusQuery = useQuery({
     queryKey: ["app-status"],
     queryFn: getAppStatus,
@@ -79,27 +73,42 @@ export function OverviewPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={Activity}
-          label="Total events"
-          value={compactNumber(summary?.totalEvents)}
-          caption="Captured in the current local sample"
+          label={t("overview.metrics.totalEvents")}
+          value={compactNumber(summary?.totalEvents, locale)}
+          caption={t("overview.metrics.totalEventsCaption")}
         />
         <MetricCard
           icon={Keyboard}
-          label="Keyboard events"
-          value={compactNumber(summary?.keyEvents)}
-          caption="Press and release signals"
+          label={t("overview.metrics.keyboardEvents")}
+          value={compactNumber(summary?.keyEvents, locale)}
+          caption={t("overview.metrics.keyboardEventsCaption")}
         />
         <MetricCard
           icon={MousePointer}
-          label="Pointer events"
-          value={compactNumber((summary?.buttonEvents ?? 0) + (summary?.wheelEvents ?? 0))}
-          caption="Buttons and wheel activity"
+          label={t("overview.metrics.pointerEvents")}
+          value={compactNumber(
+            (summary?.buttonEvents ?? 0) + (summary?.wheelEvents ?? 0),
+            locale,
+          )}
+          caption={t("overview.metrics.pointerEventsCaption")}
         />
         <MetricCard
           icon={Clock}
-          label="Last event"
-          value={status ? formatDateTime(status.lastEventAt) : "Loading"}
-          caption={status?.listenerRunning ? "Listener is receiving events" : "Waiting for listener"}
+          label={t("overview.metrics.lastEvent")}
+          value={
+            status
+              ? formatDateTime(
+                  status.lastEventAt,
+                  locale,
+                  t("common.noEventsYet"),
+                )
+              : t("common.loading")
+          }
+          caption={
+            status?.listenerRunning
+              ? t("overview.metrics.listenerReceiving")
+              : t("overview.metrics.listenerWaiting")
+          }
           valueClassName="text-lg"
         />
       </section>
@@ -108,9 +117,9 @@ export function OverviewPage() {
         <Card className="min-w-0">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Recent events</CardTitle>
+              <CardTitle>{t("overview.recentEvents.title")}</CardTitle>
               <CardDescription>
-                Placeholder data for the upcoming Tauri query interface.
+                {t("overview.recentEvents.description")}
               </CardDescription>
             </div>
             <Badge
@@ -118,28 +127,40 @@ export function OverviewPage() {
               variant={status?.databaseReady ? "success" : "secondary"}
             >
               <span className="size-2 rounded-full bg-current" />
-              {status?.databaseReady ? "Database ready" : "Database pending"}
+              {status?.databaseReady
+                ? t("common.databaseReady")
+                : t("common.databasePending")}
             </Badge>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-36">Time</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead className="min-w-36">App</TableHead>
-                  <TableHead className="min-w-64">Window</TableHead>
+                  <TableHead className="min-w-36">
+                    {t("overview.recentEvents.time")}
+                  </TableHead>
+                  <TableHead>{t("common.type")}</TableHead>
+                  <TableHead>{t("common.value")}</TableHead>
+                  <TableHead className="min-w-36">{t("common.app")}</TableHead>
+                  <TableHead className="min-w-64">
+                    {t("common.window")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {events.map((event) => (
                   <TableRow key={event.id}>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatDateTime(event.occurredAt)}
+                      {formatDateTime(
+                        event.occurredAt,
+                        locale,
+                        t("common.noEventsYet"),
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{eventKindLabel[event.kind]}</Badge>
+                      <Badge variant="outline">
+                        {t(`events.kind.${event.kind}`)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{event.value}</TableCell>
                     <TableCell className="font-medium">{event.appName}</TableCell>
@@ -155,9 +176,9 @@ export function OverviewPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top applications</CardTitle>
+            <CardTitle>{t("overview.topApplications.title")}</CardTitle>
             <CardDescription>
-              Activity distribution by active window application.
+              {t("overview.topApplications.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -166,7 +187,7 @@ export function OverviewPage() {
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate text-sm font-medium">{app.appName}</span>
                   <span className="shrink-0 text-sm text-muted-foreground">
-                    {compactNumber(app.eventCount)}
+                    {compactNumber(app.eventCount, locale)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
