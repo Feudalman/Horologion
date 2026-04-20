@@ -65,6 +65,10 @@ pub struct InputEvent {
     pub raw_event: Option<String>,
     /// 原始窗口 JSON，便于调试和后续补字段。
     pub raw_window: Option<String>,
+    /// 采集事件的来源名称，例如 `listener`。
+    pub collector_name: String,
+    /// 采集器版本，用于排查不同版本写入的数据差异。
+    pub collector_version: String,
 }
 
 /// `observed_windows` 表中的完整窗口记录。
@@ -119,6 +123,10 @@ pub struct InputEventRecord {
     pub raw_event: Option<String>,
     /// 原始窗口 JSON，便于调试和后续补字段。
     pub raw_window: Option<String>,
+    /// 采集事件的来源名称，例如 `listener`。
+    pub collector_name: String,
+    /// 采集器版本，用于排查不同版本写入的数据差异。
+    pub collector_version: String,
     /// 数据库记录创建时间。
     pub created_at: chrono::DateTime<chrono::Utc>,
 }

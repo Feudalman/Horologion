@@ -134,7 +134,9 @@ pub(crate) fn map_input_event_record(row: &Row<'_>) -> duckdb::Result<InputEvent
         window_id: row.get(6)?,
         raw_event: row.get(7)?,
         raw_window: row.get(8)?,
-        created_at: row.get(9)?,
+        collector_name: row.get(9)?,
+        collector_version: row.get(10)?,
+        created_at: row.get(11)?,
     })
 }
 

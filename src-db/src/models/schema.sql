@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS input_events (
     window_id BIGINT REFERENCES observed_windows(window_id),
     raw_event TEXT,
     raw_window TEXT,
+    collector_name TEXT NOT NULL DEFAULT 'listener',
+    collector_version TEXT NOT NULL DEFAULT 'unknown',
     created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp
 );
 
@@ -50,6 +52,9 @@ CREATE INDEX IF NOT EXISTS idx_input_events_kind
 
 CREATE INDEX IF NOT EXISTS idx_input_events_window
     ON input_events (window_id);
+
+CREATE INDEX IF NOT EXISTS idx_input_events_collector
+    ON input_events (collector_name, collector_version);
 
 CREATE INDEX IF NOT EXISTS idx_observed_windows_app
     ON observed_windows (app_name);

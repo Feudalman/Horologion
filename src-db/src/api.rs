@@ -68,6 +68,8 @@ mod tests {
             window,
             raw_event: Some(format!(r#"{{"value":"{}"}}"#, value)),
             raw_window: None,
+            collector_name: "listener".to_string(),
+            collector_version: "0.0.1-test".to_string(),
         }
     }
 
@@ -135,6 +137,8 @@ mod tests {
         assert_eq!(records.total, 2);
         assert_eq!(records.pages, 1);
         assert_eq!(records.list.len(), 2);
+        assert_eq!(records.list[0].event.collector_name, "listener");
+        assert_eq!(records.list[0].event.collector_version, "0.0.1-test");
         assert!(records.list.iter().any(|record| record.window.is_some()));
         assert!(records.list.iter().any(|record| record.window.is_none()));
     }
