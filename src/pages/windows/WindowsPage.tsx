@@ -121,7 +121,7 @@ export function WindowsPage() {
   }
 
   return (
-    <Card className="flex h-full min-h-0 flex-col">
+    <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="shrink-0 gap-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <CardTitle>{t("windowsPage.table.title")}</CardTitle>
@@ -172,10 +172,10 @@ export function WindowsPage() {
         </div>
       </CardHeader>
 
-      <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="min-h-0 flex-1 overflow-auto">
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-hidden [&>div]:h-full [&>div]:overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead className="min-w-36">{t("windowsPage.table.app")}</TableHead>
                 <TableHead className="min-w-72">{t("windowsPage.table.window")}</TableHead>
@@ -302,7 +302,7 @@ export function WindowDetailPlaceholderPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-5 overflow-auto pb-1">
+    <div className="flex flex-col gap-5 pb-1">
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Card>
           <CardHeader>

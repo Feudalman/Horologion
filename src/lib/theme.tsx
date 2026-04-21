@@ -1,4 +1,6 @@
 import * as React from "react";
+import { setTheme as setAppTheme } from "@tauri-apps/api/app";
+import { isTauri } from "@tauri-apps/api/core";
 
 type Theme = "light" | "dark" | "system";
 
@@ -31,6 +33,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const nextTheme = theme === "system" ? getSystemTheme() : theme;
       setResolvedTheme(nextTheme);
       document.documentElement.classList.toggle("dark", nextTheme === "dark");
+
+      if (isTauri()) {
+        void setAppTheme(nextTheme).catch((error) => {
+          console.warn("Failed to sync native window theme:", error);
+        });
+      }
     };
 
     applyTheme();

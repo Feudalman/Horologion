@@ -45,7 +45,7 @@ export function PaginationControls({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex shrink-0 flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm text-muted-foreground">
         {t("pagination.summary", {
           page,

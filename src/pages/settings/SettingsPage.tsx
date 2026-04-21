@@ -104,7 +104,7 @@ export function SettingsPage() {
     startListenerMutation.isPending || stopListenerMutation.isPending;
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="grid gap-5 pb-1 xl:grid-cols-[minmax(0,1fr)_24rem]">
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.theme.title")}</CardTitle>

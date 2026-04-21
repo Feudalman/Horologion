@@ -80,11 +80,13 @@ export function AppShell() {
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
   const page = getPageTitle(location.pathname);
+  const isTablePage =
+    location.pathname === "/events" || location.pathname === "/windows";
   const historyControls = useBrowserHistoryControls();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <header className="z-40 flex h-14 shrink-0 items-center border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
         <Button
           aria-label={
             collapsed ? t("common.expandSidebar") : t("common.collapseSidebar")
@@ -141,10 +143,10 @@ export function AppShell() {
         </Badge>
       </header>
 
-      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside
           className={cn(
-            "sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 border-r bg-card transition-[width] duration-200",
+            "h-full shrink-0 border-r bg-card transition-[width] duration-200",
             collapsed ? "w-16" : "w-60",
             "max-sm:w-16",
           )}
@@ -195,8 +197,18 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-hidden">
-          <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6">
+        <main
+          className={cn(
+            "min-w-0 flex-1",
+            isTablePage ? "overflow-hidden" : "overflow-auto",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6",
+              isTablePage ? "h-full min-h-0 overflow-hidden" : "min-h-full",
+            )}
+          >
             <div className="flex min-w-0 shrink-0 flex-col gap-1">
               <h1 className="truncate text-2xl font-semibold tracking-normal">
                 {t(page.titleKey)}
@@ -205,7 +217,12 @@ export function AppShell() {
                 {t(page.subtitleKey)}
               </p>
             </div>
-            <div className="min-h-0 flex-1">
+            <div
+              className={cn(
+                "min-h-0 flex-1",
+                isTablePage && "overflow-hidden",
+              )}
+            >
               <Outlet />
             </div>
           </div>

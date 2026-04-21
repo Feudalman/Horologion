@@ -64,7 +64,7 @@ export function OverviewPage() {
   const events = eventsQuery.data ?? [];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pb-1">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={Activity}
