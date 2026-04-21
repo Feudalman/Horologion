@@ -37,21 +37,25 @@ import { cn } from "@/lib/utils";
 const themeOptions: Array<{
   value: Theme;
   labelKey: string;
+  descriptionKey: string;
   icon: LucideIcon;
 }> = [
   {
     value: "light",
     labelKey: "settings.theme.light",
+    descriptionKey: "settings.theme.lightDescription",
     icon: Sun,
   },
   {
     value: "dark",
     labelKey: "settings.theme.dark",
+    descriptionKey: "settings.theme.darkDescription",
     icon: Moon,
   },
   {
     value: "system",
     labelKey: "settings.theme.system",
+    descriptionKey: "settings.theme.systemDescription",
     icon: Monitor,
   },
 ];
@@ -121,6 +125,9 @@ export function SettingsPage() {
                 {theme === option.value ? (
                   <Badge variant="success">{t("common.active")}</Badge>
                 ) : null}
+              </span>
+              <span className="text-wrap text-sm font-normal text-muted-foreground">
+                {t(option.descriptionKey)}
               </span>
             </Button>
           ))}
