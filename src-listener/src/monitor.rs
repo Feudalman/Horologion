@@ -13,22 +13,54 @@ use std::panic::AssertUnwindSafe;
 
 const COLLECTOR_NAME: &str = env!("CARGO_PKG_NAME");
 const COLLECTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
+const TRANSPORT_ENV: &str = "HOROLOGION_LISTENER_TRANSPORT";
+const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
 
 /// 事件监听器
 pub struct EventListener {
-    db: DatabaseManager,
+    db: Option<DatabaseManager>,
+    transport: ListenerTransport,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ListenerTransport {
+    /// Standalone mode: write events directly into DuckDB.
+    Database,
+    /// Sidecar mode: stream JSON events to the parent Tauri process.
+    Stdio,
+}
+
+impl ListenerTransport {
+    fn from_env() -> Self {
+        match std::env::var(TRANSPORT_ENV)
+            .ok()
+            .as_deref()
+            .map(str::to_lowercase)
+            .as_deref()
+        {
+            Some("stdio") => Self::Stdio,
+            _ => Self::Database,
+        }
+    }
 }
 
 impl EventListener {
     /// 创建新的事件监听器
     pub fn new() -> Result<Self, String> {
-        let db = DatabaseManager::from_env().map_err(|error| error.to_string())?;
-        db.init().map_err(|error| error.to_string())?;
-        db.with_connection(init_database)
-            .map_err(|error| error.to_string())?;
-        info!("Database schema initialized for listener");
+        let transport = ListenerTransport::from_env();
+        let db = if transport == ListenerTransport::Database {
+            let db = DatabaseManager::from_env().map_err(|error| error.to_string())?;
+            db.init().map_err(|error| error.to_string())?;
+            db.with_connection(init_database)
+                .map_err(|error| error.to_string())?;
+            info!("Database schema initialized for listener");
+            Some(db)
+        } else {
+            info!("Listener will stream events to stdout");
+            None
+        };
 
-        Ok(Self { db })
+        Ok(Self { db, transport })
     }
 
     /// 启动监听
@@ -36,7 +68,8 @@ impl EventListener {
         info!("Input listener process started");
 
         let db = self.db.clone();
-        if let Err(error) = listen(move |event| Self::callback(event, db.clone())) {
+        let transport = self.transport;
+        if let Err(error) = listen(move |event| Self::callback(event, db.clone(), transport)) {
             let error_msg = format!("Listening error: {:?}", error);
             error!("{}", error_msg);
             return Err(error_msg);
@@ -60,7 +93,7 @@ impl EventListener {
     }
 
     /// 输出事件数据
-    fn println(event_type: &str, event_detail: &str, time_str: &str, window_json: &str) {
+    fn print_human_event(event_type: &str, event_detail: &str, time_str: &str, window_json: &str) {
         let event_data = format!(
             "{} --- {}: {} --- Window: {}",
             time_str, event_type, event_detail, window_json
@@ -70,7 +103,7 @@ impl EventListener {
     }
 
     /// 监听回调
-    fn callback(event: Event, db: DatabaseManager) {
+    fn callback(event: Event, db: Option<DatabaseManager>, transport: ListenerTransport) {
         let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
             // 鼠标移动事件太频繁，直接跳过处理
             if matches!(event.event_type, EventType::MouseMove { .. }) {
@@ -83,9 +116,16 @@ impl EventListener {
             match event.event_type {
                 EventType::KeyPress(key) => {
                     let event_detail = format!("{:?}", key);
-                    Self::println("KeyPress", &event_detail, &time_str, &window_json);
+                    Self::print_event(
+                        transport,
+                        "KeyPress",
+                        &event_detail,
+                        &time_str,
+                        &window_json,
+                    );
                     Self::save_event(
-                        &db,
+                        db.as_ref(),
+                        transport,
                         InputEventKind::KeyPress,
                         event_detail,
                         None,
@@ -98,9 +138,16 @@ impl EventListener {
                 }
                 EventType::KeyRelease(key) => {
                     let event_detail = format!("{:?}", key);
-                    Self::println("KeyRelease", &event_detail, &time_str, &window_json);
+                    Self::print_event(
+                        transport,
+                        "KeyRelease",
+                        &event_detail,
+                        &time_str,
+                        &window_json,
+                    );
                     Self::save_event(
-                        &db,
+                        db.as_ref(),
+                        transport,
                         InputEventKind::KeyRelease,
                         event_detail,
                         None,
@@ -113,9 +160,16 @@ impl EventListener {
                 }
                 EventType::ButtonPress(button) => {
                     let event_detail = format!("{:?}", button);
-                    Self::println("ButtonPress", &event_detail, &time_str, &window_json);
+                    Self::print_event(
+                        transport,
+                        "ButtonPress",
+                        &event_detail,
+                        &time_str,
+                        &window_json,
+                    );
                     Self::save_event(
-                        &db,
+                        db.as_ref(),
+                        transport,
                         InputEventKind::ButtonPress,
                         event_detail,
                         None,
@@ -128,9 +182,16 @@ impl EventListener {
                 }
                 EventType::ButtonRelease(button) => {
                     let event_detail = format!("{:?}", button);
-                    Self::println("ButtonRelease", &event_detail, &time_str, &window_json);
+                    Self::print_event(
+                        transport,
+                        "ButtonRelease",
+                        &event_detail,
+                        &time_str,
+                        &window_json,
+                    );
                     Self::save_event(
-                        &db,
+                        db.as_ref(),
+                        transport,
                         InputEventKind::ButtonRelease,
                         event_detail,
                         None,
@@ -143,9 +204,10 @@ impl EventListener {
                 }
                 EventType::Wheel { delta_x, delta_y } => {
                     let event_detail = format!("delta_x:{}, delta_y:{}", delta_x, delta_y);
-                    Self::println("Wheel", &event_detail, &time_str, &window_json);
+                    Self::print_event(transport, "Wheel", &event_detail, &time_str, &window_json);
                     Self::save_event(
-                        &db,
+                        db.as_ref(),
+                        transport,
                         InputEventKind::Wheel,
                         event_detail,
                         Some(delta_x as f64),
@@ -165,9 +227,22 @@ impl EventListener {
         }
     }
 
+    fn print_event(
+        transport: ListenerTransport,
+        event_type: &str,
+        event_detail: &str,
+        time_str: &str,
+        window_json: &str,
+    ) {
+        if transport == ListenerTransport::Database {
+            Self::print_human_event(event_type, event_detail, time_str, window_json);
+        }
+    }
+
     /// 将监听事件写入数据库。
     fn save_event(
-        db: &DatabaseManager,
+        db: Option<&DatabaseManager>,
+        transport: ListenerTransport,
         kind: InputEventKind,
         value: String,
         delta_x: Option<f64>,
@@ -202,8 +277,26 @@ impl EventListener {
             collector_version: COLLECTOR_VERSION.to_string(),
         };
 
-        if let Err(error) = db.with_connection(|conn| insert_input_event(conn, &input_event)) {
-            error!("Failed to save input event: {}", error);
+        match transport {
+            ListenerTransport::Database => {
+                let Some(db) = db else {
+                    error!("Database transport selected without an initialized database");
+                    return;
+                };
+
+                if let Err(error) =
+                    db.with_connection(|conn| insert_input_event(conn, &input_event))
+                {
+                    error!("Failed to save input event: {}", error);
+                }
+            }
+            ListenerTransport::Stdio => match serde_json::to_string(&input_event) {
+                Ok(payload) => {
+                    println!("{STDIO_EVENT_PREFIX}{payload}");
+                    io::stdout().flush().unwrap();
+                }
+                Err(error) => error!("Failed to serialize input event: {}", error),
+            },
         }
     }
 

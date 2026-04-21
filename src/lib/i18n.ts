@@ -8,12 +8,21 @@ import {
   type I18nResources,
   type SupportedLanguage,
 } from "@/lib/i18n/types";
+import { eventsI18n } from "@/pages/events/i18n";
 import { overviewI18n } from "@/pages/overview/i18n";
 import { settingsI18n } from "@/pages/settings/i18n";
+import { windowsI18n } from "@/pages/windows/i18n";
 
 export { supportedLanguages, type SupportedLanguage };
 
-const modules = [commonI18n, appShellI18n, overviewI18n, settingsI18n];
+const modules = [
+  commonI18n,
+  appShellI18n,
+  overviewI18n,
+  eventsI18n,
+  windowsI18n,
+  settingsI18n,
+];
 
 const resources = modules.reduce<I18nResources>((merged, moduleResources) => {
   for (const language of supportedLanguages) {

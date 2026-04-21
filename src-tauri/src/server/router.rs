@@ -11,6 +11,7 @@ pub fn handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'stat
     tauri::generate_handler![
         settings::get_app_status,
         settings::get_app_settings,
+        settings::get_database_file_size,
         events::get_activity_summary,
         events::list_input_events,
         events::get_input_event,

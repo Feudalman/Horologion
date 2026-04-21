@@ -4,7 +4,9 @@ import {
   BarChart3,
   Circle,
   Database,
+  Keyboard,
   Menu,
+  PanelsTopLeft,
   Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +24,16 @@ const navItems = [
     icon: BarChart3,
   },
   {
+    labelKey: "nav.events",
+    path: "/events",
+    icon: Keyboard,
+  },
+  {
+    labelKey: "nav.windows",
+    path: "/windows",
+    icon: PanelsTopLeft,
+  },
+  {
     labelKey: "nav.settings",
     path: "/settings",
     icon: Settings,
@@ -33,6 +45,22 @@ const pageTitles: Record<string, { titleKey: string; subtitleKey: string }> = {
     titleKey: "page.overview.title",
     subtitleKey: "page.overview.subtitle",
   },
+  "/events": {
+    titleKey: "page.events.title",
+    subtitleKey: "page.events.subtitle",
+  },
+  "/events/:eventId": {
+    titleKey: "page.eventDetail.title",
+    subtitleKey: "page.eventDetail.subtitle",
+  },
+  "/windows": {
+    titleKey: "page.windows.title",
+    subtitleKey: "page.windows.subtitle",
+  },
+  "/windows/:windowId": {
+    titleKey: "page.windowDetail.title",
+    subtitleKey: "page.windowDetail.subtitle",
+  },
   "/settings": {
     titleKey: "page.settings.title",
     subtitleKey: "page.settings.subtitle",
@@ -43,7 +71,7 @@ export function AppShell() {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
-  const page = pageTitles[location.pathname] ?? pageTitles["/overview"];
+  const page = getPageTitle(location.pathname);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -151,4 +179,16 @@ export function AppShell() {
       </div>
     </div>
   );
+}
+
+function getPageTitle(pathname: string) {
+  if (pathname.startsWith("/events/")) {
+    return pageTitles["/events/:eventId"];
+  }
+
+  if (pathname.startsWith("/windows/")) {
+    return pageTitles["/windows/:windowId"];
+  }
+
+  return pageTitles[pathname] ?? pageTitles["/overview"];
 }

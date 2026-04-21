@@ -58,6 +58,15 @@ pub struct AppSettings {
     pub database_path: Option<String>,
 }
 
+/// 当前数据库文件大小。
+///
+/// 内存数据库没有文件大小，返回 `None`。文件数据库返回主数据库文件的字节数。
+#[derive(Debug, Clone, Serialize)]
+pub struct DatabaseFileSize {
+    /// 当前数据库文件大小，单位字节；内存数据库时为 `None`。
+    pub size_bytes: Option<u64>,
+}
+
 /// 返回前端展示所需的应用状态。
 #[tauri::command]
 pub fn get_app_status(state: State<'_, ServerState>) -> Result<AppStatus, String> {
@@ -101,5 +110,21 @@ pub fn get_app_settings(state: State<'_, ServerState>) -> Result<AppSettings, St
         run_mode: RunModeResponse::from(state.run_mode()),
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         database_path: state.database_path(),
+    })
+}
+
+/// 返回当前数据库文件大小。
+#[tauri::command]
+pub fn get_database_file_size(state: State<'_, ServerState>) -> Result<DatabaseFileSize, String> {
+    let Some(path) = state.database_file_path() else {
+        return Ok(DatabaseFileSize { size_bytes: None });
+    };
+
+    let size_bytes = std::fs::metadata(path)
+        .map(|metadata| metadata.len())
+        .map_err(|error| error.to_string())?;
+
+    Ok(DatabaseFileSize {
+        size_bytes: Some(size_bytes),
     })
 }

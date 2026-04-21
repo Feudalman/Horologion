@@ -63,9 +63,15 @@ impl ServerState {
 
     /// 返回当前数据库文件路径；内存数据库没有路径。
     pub fn database_path(&self) -> Option<String> {
+        self.database_file_path()
+            .map(|path| path.to_string_lossy().to_string())
+    }
+
+    /// 返回当前数据库文件路径；内存数据库没有路径。
+    pub fn database_file_path(&self) -> Option<&std::path::Path> {
         match &self.db.config().target {
             DatabaseTarget::Memory => None,
-            DatabaseTarget::File(path) => Some(path.to_string_lossy().to_string()),
+            DatabaseTarget::File(path) => Some(path.as_path()),
         }
     }
 

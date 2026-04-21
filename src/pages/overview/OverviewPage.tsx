@@ -7,6 +7,7 @@ import {
   MousePointer,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,18 +29,8 @@ import {
   getActivitySummary,
   getAppStatus,
   listRecentEvents,
-} from "@/lib/mock-api";
-
-function formatDateTime(value: string | undefined, locale: string, emptyText: string) {
-  if (!value) {
-    return emptyText;
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeStyle: "medium",
-  }).format(new Date(value));
-}
+} from "@/lib/api";
+import { formatCompactDateTime } from "@/lib/format";
 
 function compactNumber(value: number | undefined, locale: string) {
   return new Intl.NumberFormat(locale, {
@@ -50,18 +41,22 @@ function compactNumber(value: number | undefined, locale: string) {
 
 export function OverviewPage() {
   const { i18n, t } = useTranslation();
+  const navigate = useNavigate();
   const locale = i18n.language;
   const statusQuery = useQuery({
     queryKey: ["app-status"],
     queryFn: getAppStatus,
+    refetchInterval: 5_000,
   });
   const summaryQuery = useQuery({
     queryKey: ["activity-summary"],
     queryFn: getActivitySummary,
+    refetchInterval: 5_000,
   });
   const eventsQuery = useQuery({
     queryKey: ["recent-events"],
     queryFn: listRecentEvents,
+    refetchInterval: 5_000,
   });
 
   const status = statusQuery.data;
@@ -97,9 +92,8 @@ export function OverviewPage() {
           label={t("overview.metrics.lastEvent")}
           value={
             status
-              ? formatDateTime(
+              ? formatCompactDateTime(
                   status.lastEventAt,
-                  locale,
                   t("common.noEventsYet"),
                 )
               : t("common.loading")
@@ -136,10 +130,10 @@ export function OverviewPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-36">
+                  <TableHead className="min-w-36 whitespace-nowrap">
                     {t("overview.recentEvents.time")}
                   </TableHead>
-                  <TableHead>{t("common.type")}</TableHead>
+                  <TableHead className="whitespace-nowrap">{t("common.type")}</TableHead>
                   <TableHead>{t("common.value")}</TableHead>
                   <TableHead className="min-w-36">{t("common.app")}</TableHead>
                   <TableHead className="min-w-64">
@@ -149,23 +143,46 @@ export function OverviewPage() {
               </TableHeader>
               <TableBody>
                 {events.map((event) => (
-                  <TableRow key={event.id}>
+                  <TableRow
+                    className="cursor-pointer"
+                    key={event.id}
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    onKeyDown={(keyboardEvent) => {
+                      if (keyboardEvent.key === "Enter") {
+                        navigate(`/events/${event.id}`);
+                      }
+                    }}
+                    role="link"
+                    tabIndex={0}
+                  >
                     <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatDateTime(
+                      {formatCompactDateTime(
                         event.occurredAt,
-                        locale,
                         t("common.noEventsYet"),
                       )}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
+                    <TableCell className="whitespace-nowrap">
+                      <Badge className="whitespace-nowrap" variant="outline">
                         {t(`events.kind.${event.kind}`)}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{event.value}</TableCell>
                     <TableCell className="font-medium">{event.appName}</TableCell>
                     <TableCell className="max-w-72 truncate text-muted-foreground">
-                      {event.windowTitle}
+                      {event.windowId ? (
+                        <button
+                          className="max-w-full truncate text-left underline-offset-4 hover:text-foreground hover:underline"
+                          onClick={(clickEvent) => {
+                            clickEvent.stopPropagation();
+                            navigate(`/windows/${event.windowId}`);
+                          }}
+                          type="button"
+                        >
+                          {event.windowTitle}
+                        </button>
+                      ) : (
+                        event.windowTitle
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

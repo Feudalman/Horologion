@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   Monitor,
   Moon,
+  HardDrive,
   Server,
   Sun,
 } from "lucide-react";
@@ -20,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getAppStatus } from "@/lib/mock-api";
+import { getAppSettings, getDatabaseFileSize } from "@/lib/api";
 import { type SupportedLanguage } from "@/lib/i18n";
 import { type Theme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -71,11 +72,17 @@ const languageOptions: Array<{
 export function SettingsPage() {
   const { i18n, t } = useTranslation();
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const statusQuery = useQuery({
-    queryKey: ["settings-status"],
-    queryFn: getAppStatus,
+  const settingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
   });
-  const status = statusQuery.data;
+  const databaseSizeQuery = useQuery({
+    queryKey: ["database-file-size"],
+    queryFn: getDatabaseFileSize,
+    refetchInterval: 10_000,
+  });
+  const settings = settingsQuery.data;
+  const databaseSize = databaseSizeQuery.data;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -164,8 +171,8 @@ export function SettingsPage() {
             icon={Server}
             label={t("settings.runtime.runMode")}
             value={
-              status?.runMode
-                ? t(`settings.runtime.mode.${status.runMode}`)
+              settings?.runMode
+                ? t(`settings.runtime.mode.${settings.runMode}`)
                 : t("common.loading")
             }
           />
@@ -181,7 +188,21 @@ export function SettingsPage() {
           <InfoRow
             icon={Database}
             label={t("settings.runtime.version")}
-            value={status?.version ?? t("common.loading")}
+            value={settings?.version ?? t("common.loading")}
+          />
+          <Separator />
+          <InfoRow
+            icon={HardDrive}
+            label={t("settings.runtime.databaseSize")}
+            value={
+              databaseSize
+                ? formatFileSize(
+                    databaseSize.sizeBytes,
+                    i18n.language,
+                    t("settings.database.inMemory"),
+                  )
+                : t("common.loading")
+            }
           />
         </CardContent>
       </Card>
@@ -196,13 +217,42 @@ export function SettingsPage() {
         <CardContent>
           <div className="rounded-md border bg-muted/40 p-3 font-mono text-sm text-muted-foreground">
             <div className="break-all">
-              {status?.databasePath ?? t("common.loading")}
+              {settings
+                ? settings.databasePath ?? t("settings.database.inMemory")
+                : t("common.loading")}
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
+}
+
+function formatFileSize(
+  bytes: number | null,
+  locale: string,
+  emptyText: string,
+) {
+  if (bytes === null) {
+    return emptyText;
+  }
+
+  if (bytes < 1024) {
+    return new Intl.NumberFormat(locale).format(bytes) + " B";
+  }
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${new Intl.NumberFormat(locale, {
+    maximumFractionDigits: value >= 10 ? 1 : 2,
+  }).format(value)} ${units[unitIndex]}`;
 }
 
 function InfoRow({

@@ -16,6 +16,14 @@ export const commonI18n = {
       value: "值",
       window: "窗口",
     },
+    pagination: {
+      go: "跳转",
+      jumpTo: "跳至",
+      next: "下一页",
+      previous: "上一页",
+      rowsPerPage: "每页",
+      summary: "第 {{page}} / {{pages}} 页，共 {{total}} 条",
+    },
     events: {
       kind: {
         key_press: "按键按下",
@@ -40,6 +48,14 @@ export const commonI18n = {
       type: "Type",
       value: "Value",
       window: "Window",
+    },
+    pagination: {
+      go: "Go",
+      jumpTo: "Jump to",
+      next: "Next",
+      previous: "Previous",
+      rowsPerPage: "Rows",
+      summary: "Page {{page}} of {{pages}}, {{total}} total",
     },
     events: {
       kind: {
