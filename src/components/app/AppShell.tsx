@@ -48,30 +48,24 @@ const navItems = [
   },
 ];
 
-const pageTitles: Record<string, { titleKey: string; subtitleKey: string }> = {
+const pageTitles: Record<string, { titleKey: string }> = {
   "/overview": {
     titleKey: "page.overview.title",
-    subtitleKey: "page.overview.subtitle",
   },
   "/events": {
     titleKey: "page.events.title",
-    subtitleKey: "page.events.subtitle",
   },
   "/events/:eventId": {
     titleKey: "page.eventDetail.title",
-    subtitleKey: "page.eventDetail.subtitle",
   },
   "/windows": {
     titleKey: "page.windows.title",
-    subtitleKey: "page.windows.subtitle",
   },
   "/windows/:windowId": {
     titleKey: "page.windowDetail.title",
-    subtitleKey: "page.windowDetail.subtitle",
   },
   "/settings": {
     titleKey: "page.settings.title",
-    subtitleKey: "page.settings.subtitle",
   },
 };
 
@@ -213,9 +207,6 @@ export function AppShell() {
               <h1 className="truncate text-2xl font-semibold tracking-normal">
                 {t(page.titleKey)}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {t(page.subtitleKey)}
-              </p>
             </div>
             <div
               className={cn(

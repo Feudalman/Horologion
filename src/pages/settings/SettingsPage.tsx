@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -38,25 +37,21 @@ import { cn } from "@/lib/utils";
 const themeOptions: Array<{
   value: Theme;
   labelKey: string;
-  descriptionKey: string;
   icon: LucideIcon;
 }> = [
   {
     value: "light",
     labelKey: "settings.theme.light",
-    descriptionKey: "settings.theme.lightDescription",
     icon: Sun,
   },
   {
     value: "dark",
     labelKey: "settings.theme.dark",
-    descriptionKey: "settings.theme.darkDescription",
     icon: Moon,
   },
   {
     value: "system",
     labelKey: "settings.theme.system",
-    descriptionKey: "settings.theme.systemDescription",
     icon: Monitor,
   },
 ];
@@ -64,17 +59,14 @@ const themeOptions: Array<{
 const languageOptions: Array<{
   value: SupportedLanguage;
   labelKey: string;
-  descriptionKey: string;
 }> = [
   {
     value: "zh-CN",
     labelKey: "settings.language.zh",
-    descriptionKey: "settings.language.zhDescription",
   },
   {
     value: "en-US",
     labelKey: "settings.language.en",
-    descriptionKey: "settings.language.enDescription",
   },
 ];
 
@@ -108,9 +100,6 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.theme.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.theme.description")}
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           {themeOptions.map((option) => (
@@ -133,9 +122,6 @@ export function SettingsPage() {
                   <Badge variant="success">{t("common.active")}</Badge>
                 ) : null}
               </span>
-              <span className="text-wrap text-sm font-normal text-muted-foreground">
-                {t(option.descriptionKey)}
-              </span>
             </Button>
           ))}
         </CardContent>
@@ -144,9 +130,6 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.language.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.language.description")}
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {languageOptions.map((option) => (
@@ -162,11 +145,8 @@ export function SettingsPage() {
               variant="outline"
             >
               <Languages className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{t(option.labelKey)}</span>
-                <span className="block text-wrap text-sm font-normal text-muted-foreground">
-                  {t(option.descriptionKey)}
-                </span>
+              <span className="min-w-0 flex-1 font-semibold">
+                {t(option.labelKey)}
               </span>
               {i18n.language === option.value ? (
                 <Badge className="shrink-0" variant="success">
@@ -181,9 +161,6 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.runtime.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.runtime.description")}
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <InfoRow
@@ -229,9 +206,6 @@ export function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t("settings.listener.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.listener.description")}
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <InfoRow
@@ -270,9 +244,6 @@ export function SettingsPage() {
       <Card className="xl:col-span-2">
         <CardHeader>
           <CardTitle>{t("settings.database.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.database.description")}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border bg-muted/40 p-3 font-mono text-sm text-muted-foreground">

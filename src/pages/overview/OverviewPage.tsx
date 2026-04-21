@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -112,9 +111,6 @@ export function OverviewPage() {
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{t("overview.recentEvents.title")}</CardTitle>
-              <CardDescription>
-                {t("overview.recentEvents.description")}
-              </CardDescription>
             </div>
             <Badge
               className="w-fit gap-1.5"
@@ -194,9 +190,6 @@ export function OverviewPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t("overview.topApplications.title")}</CardTitle>
-            <CardDescription>
-              {t("overview.topApplications.description")}
-            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {(summary?.topApps ?? []).map((app) => (
