@@ -2,6 +2,8 @@ import * as React from "react";
 import {
   Activity,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Database,
   Keyboard,
@@ -10,7 +12,13 @@ import {
   Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +80,7 @@ export function AppShell() {
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
   const page = getPageTitle(location.pathname);
+  const historyControls = useBrowserHistoryControls();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -101,6 +110,29 @@ export function AppShell() {
               {t("common.horologionSubtitle")}
             </div>
           </div>
+        </div>
+
+        <div className="mr-2 flex items-center gap-1">
+          <Button
+            aria-label={t("common.goBack")}
+            disabled={!historyControls.canGoBack}
+            onClick={historyControls.goBack}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            aria-label={t("common.goForward")}
+            disabled={!historyControls.canGoForward}
+            onClick={historyControls.goForward}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <ChevronRight />
+          </Button>
         </div>
 
         <Badge className="hidden gap-1.5 sm:inline-flex" variant="success">
@@ -193,4 +225,36 @@ function getPageTitle(pathname: string) {
   }
 
   return pageTitles[pathname] ?? pageTitles["/overview"];
+}
+
+function useBrowserHistoryControls() {
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const location = useLocation();
+  const currentIndex = getHistoryIndex();
+  const [maxIndex, setMaxIndex] = React.useState(currentIndex);
+
+  React.useEffect(() => {
+    const nextIndex = getHistoryIndex();
+
+    setMaxIndex((value) => {
+      if (navigationType === "PUSH") {
+        return nextIndex;
+      }
+
+      return Math.max(value, nextIndex);
+    });
+  }, [location.key, navigationType]);
+
+  return {
+    canGoBack: currentIndex > 0,
+    canGoForward: currentIndex < maxIndex,
+    goBack: () => navigate(-1),
+    goForward: () => navigate(1),
+  };
+}
+
+function getHistoryIndex() {
+  const state = window.history.state as { idx?: number } | null;
+  return state?.idx ?? 0;
 }

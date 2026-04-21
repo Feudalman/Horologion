@@ -1,8 +1,8 @@
 import * as React from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Hash, Search, X } from "lucide-react";
+import { Hash, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { PaginationControls } from "@/components/app/PaginationControls";
 import { Badge } from "@/components/ui/badge";
@@ -303,15 +303,6 @@ export function WindowDetailPlaceholderPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 overflow-auto pb-1">
-      <div>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/windows">
-            <ArrowLeft />
-            {t("windowsPage.detail.back")}
-          </Link>
-        </Button>
-      </div>
-
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Card>
           <CardHeader>
@@ -368,70 +359,68 @@ export function WindowDetailPlaceholderPage() {
         </Card>
       </section>
 
-      <Card className="flex min-h-[24rem] flex-1 flex-col">
-        <CardHeader className="shrink-0">
+      <Card>
+        <CardHeader>
           <CardTitle>{t("windowsPage.detail.relatedEvents")}</CardTitle>
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="min-h-0 flex-1 overflow-auto">
-            <Table>
-              <TableHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-36 whitespace-nowrap">
+                  {t("eventsPage.table.time")}
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
+                  {t("eventsPage.table.type")}
+                </TableHead>
+                <TableHead>{t("eventsPage.table.value")}</TableHead>
+                <TableHead className="min-w-32">
+                  {t("eventsPage.table.collector")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {events.length === 0 ? (
                 <TableRow>
-                  <TableHead className="min-w-36 whitespace-nowrap">
-                    {t("eventsPage.table.time")}
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap">
-                    {t("eventsPage.table.type")}
-                  </TableHead>
-                  <TableHead>{t("eventsPage.table.value")}</TableHead>
-                  <TableHead className="min-w-32">
-                    {t("eventsPage.table.collector")}
-                  </TableHead>
+                  <TableCell className="text-center text-muted-foreground" colSpan={4}>
+                    {eventsQuery.isFetching
+                      ? t("common.loading")
+                      : t("eventsPage.table.empty")}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {events.length === 0 ? (
-                  <TableRow>
-                    <TableCell className="text-center text-muted-foreground" colSpan={4}>
-                      {eventsQuery.isFetching
-                        ? t("common.loading")
-                        : t("eventsPage.table.empty")}
+              ) : (
+                events.map((event) => (
+                  <TableRow
+                    className="cursor-pointer"
+                    key={event.id}
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    onKeyDown={(keyboardEvent) => {
+                      if (keyboardEvent.key === "Enter") {
+                        navigate(`/events/${event.id}`);
+                      }
+                    }}
+                    role="link"
+                    tabIndex={0}
+                  >
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {formatCompactDateTime(event.occurredAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge className="whitespace-nowrap" variant="outline">
+                        {t(`events.kind.${event.kind}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-72 truncate font-mono text-xs">
+                      {event.value}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {event.collectorName} {event.collectorVersion}
                     </TableCell>
                   </TableRow>
-                ) : (
-                  events.map((event) => (
-                    <TableRow
-                      className="cursor-pointer"
-                      key={event.id}
-                      onClick={() => navigate(`/events/${event.id}`)}
-                      onKeyDown={(keyboardEvent) => {
-                        if (keyboardEvent.key === "Enter") {
-                          navigate(`/events/${event.id}`);
-                        }
-                      }}
-                      role="link"
-                      tabIndex={0}
-                    >
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {formatCompactDateTime(event.occurredAt)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Badge className="whitespace-nowrap" variant="outline">
-                          {t(`events.kind.${event.kind}`)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-72 truncate font-mono text-xs">
-                        {event.value}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {event.collectorName} {event.collectorVersion}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
 
           <PaginationControls
             onPageChange={setPage}

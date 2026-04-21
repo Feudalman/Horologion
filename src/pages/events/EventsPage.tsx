@@ -1,6 +1,6 @@
 import * as React from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Search, X } from "lucide-react";
+import { ExternalLink, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -302,15 +302,6 @@ export function EventDetailPlaceholderPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 overflow-auto pb-1">
-      <div>
-        <Button asChild size="sm" variant="outline">
-          <Link to="/events">
-            <ArrowLeft />
-            {t("eventsPage.detail.back")}
-          </Link>
-        </Button>
-      </div>
-
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Card>
           <CardHeader>
@@ -405,7 +396,7 @@ function JsonCard({ title, value }: { title: string; value: string | null }) {
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <pre className="max-h-80 overflow-auto rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+        <pre className="overflow-x-auto whitespace-pre-wrap rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
           {formatJson(value)}
         </pre>
       </CardContent>

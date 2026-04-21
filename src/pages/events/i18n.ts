@@ -33,7 +33,6 @@ export const eventsI18n = {
       },
       detail: {
         title: "事件详情",
-        back: "返回事件列表",
         collector: "采集器",
         createdAt: "记录创建时间",
         deltaX: "滚轮 X",
@@ -84,7 +83,6 @@ export const eventsI18n = {
       },
       detail: {
         title: "Event detail",
-        back: "Back to events",
         collector: "Collector",
         createdAt: "Record created at",
         deltaX: "Wheel X",

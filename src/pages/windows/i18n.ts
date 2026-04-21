@@ -31,7 +31,6 @@ export const windowsI18n = {
       },
       detail: {
         title: "窗口详情",
-        back: "返回窗口列表",
         contextHash: "上下文 Hash",
         notFound: "没有找到这个窗口上下文。",
         position: "位置",
@@ -72,7 +71,6 @@ export const windowsI18n = {
       },
       detail: {
         title: "Window detail",
-        back: "Back to windows",
         contextHash: "Context hash",
         notFound: "Window context not found.",
         position: "Position",
