@@ -6,6 +6,8 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
+const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
+
 /// 初始化并运行应用
 pub fn init_and_run() {
     // 加载 .env 配置文件
@@ -79,6 +81,10 @@ fn save_listener_event(db: &DatabaseManager, payload: &str) {
     if payload.is_empty() {
         return;
     }
+
+    let Some(payload) = payload.strip_prefix(STDIO_EVENT_PREFIX) else {
+        return;
+    };
 
     match serde_json::from_str::<InputEvent>(payload) {
         Ok(input_event) => {

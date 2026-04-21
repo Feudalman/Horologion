@@ -2725,6 +2725,8 @@ version = "0.0.1"
 dependencies = [
  "active-win-pos-rs",
  "chrono",
+ "core-foundation 0.9.4",
+ "core-foundation-sys 0.8.7",
  "database",
  "dotenvy",
  "env_logger",
