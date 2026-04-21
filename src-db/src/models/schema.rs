@@ -106,6 +106,17 @@ mod tests {
             .unwrap();
 
         assert_eq!(event_count, 1);
+
+        let (collector_name, collector_version): (String, String) = conn
+            .query_row(
+                "SELECT collector_name, collector_version FROM input_events LIMIT 1",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+
+        assert_eq!(collector_name, "listener");
+        assert_eq!(collector_version, "unknown");
     }
 
     #[test]

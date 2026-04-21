@@ -11,6 +11,9 @@ use serde_json::json;
 use std::io::{self, Write};
 use std::panic::AssertUnwindSafe;
 
+const COLLECTOR_NAME: &str = env!("CARGO_PKG_NAME");
+const COLLECTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// 事件监听器
 pub struct EventListener {
     db: DatabaseManager,
@@ -181,6 +184,8 @@ impl EventListener {
             "delta_y": delta_y,
             "key_name": key_name,
             "occurred_at": occurred_at,
+            "collector_name": COLLECTOR_NAME,
+            "collector_version": COLLECTOR_VERSION,
         })
         .to_string();
 
@@ -193,6 +198,8 @@ impl EventListener {
             window: window_info.map(Self::map_window_info),
             raw_event: Some(raw_event),
             raw_window: Some(raw_window),
+            collector_name: COLLECTOR_NAME.to_string(),
+            collector_version: COLLECTOR_VERSION.to_string(),
         };
 
         if let Err(error) = db.with_connection(|conn| insert_input_event(conn, &input_event)) {

@@ -98,9 +98,11 @@ pub fn insert_input_event(
             delta_y,
             window_id,
             raw_event,
-            raw_window
+            raw_window,
+            collector_name,
+            collector_version
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING event_id
         "#,
         params![
@@ -112,6 +114,8 @@ pub fn insert_input_event(
             window_id,
             event.raw_event,
             event.raw_window,
+            event.collector_name,
+            event.collector_version,
         ],
         |row| row.get(0),
     )?;
@@ -160,6 +164,8 @@ pub fn get_input_event(
             window_id,
             raw_event,
             raw_window,
+            collector_name,
+            collector_version,
             created_at
         FROM input_events
         WHERE event_id = ?
@@ -192,6 +198,8 @@ pub fn query_input_events(
             e.window_id,
             e.raw_event,
             e.raw_window,
+            e.collector_name,
+            e.collector_version,
             e.created_at,
             w.window_id,
             w.app_name,
@@ -280,26 +288,26 @@ pub fn query_input_events(
 
 /// 将 input 与 window 的 LEFT JOIN 查询结果映射为组合记录。
 ///
-/// 前 10 列复用 `map_input_event_record` 的 input 映射规则，
+/// 前 12 列复用 `map_input_event_record` 的 input 映射规则，
 /// 后续列在存在 `window_id` 时组装成关联窗口记录；无窗口事件会保留 `window: None`。
 fn map_input_event_with_window(row: &Row<'_>) -> duckdb::Result<InputEventWithWindow> {
     let event = map_input_event_record(row)?;
-    let window_id: Option<i64> = row.get(10)?;
+    let window_id: Option<i64> = row.get(12)?;
     let window = if window_id.is_some() {
         Some(ObservedWindowRecord {
-            window_id: row.get(10)?,
-            app_name: row.get(11)?,
-            process_path: row.get(12)?,
-            process_id: row.get(13)?,
-            title: row.get(14)?,
-            x: row.get(15)?,
-            y: row.get(16)?,
-            width: row.get(17)?,
-            height: row.get(18)?,
-            first_seen_at: row.get(19)?,
-            last_seen_at: row.get(20)?,
-            event_count: row.get(21)?,
-            context_hash: row.get(22)?,
+            window_id: row.get(12)?,
+            app_name: row.get(13)?,
+            process_path: row.get(14)?,
+            process_id: row.get(15)?,
+            title: row.get(16)?,
+            x: row.get(17)?,
+            y: row.get(18)?,
+            width: row.get(19)?,
+            height: row.get(20)?,
+            first_seen_at: row.get(21)?,
+            last_seen_at: row.get(22)?,
+            event_count: row.get(23)?,
+            context_hash: row.get(24)?,
         })
     } else {
         None

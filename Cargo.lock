@@ -2073,8 +2073,10 @@ dependencies = [
 name = "horologion"
 version = "0.0.1"
 dependencies = [
+ "chrono",
  "database",
  "dotenvy",
+ "duckdb",
  "env_logger",
  "log",
  "once_cell",
