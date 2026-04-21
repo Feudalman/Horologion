@@ -1,4 +1,7 @@
+use crate::server;
 use log::{info, warn};
+use std::sync::atomic::Ordering;
+use tauri::Manager;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
@@ -10,12 +13,26 @@ pub fn init_and_run() {
     // 初始化日志设置
     init_log();
 
+    // server state 需要早于 Tauri builder 初始化，确保 command 注册后即可访问数据库。
+    let server_state = server::ServerState::from_env().unwrap_or_else(|error| {
+        eprintln!("Failed to initialize server state: {}", error);
+        std::process::exit(1);
+    });
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .manage(server_state)
+        .invoke_handler(server::router::handler())
         .setup(|app| {
             let sidecar_command = app.shell().sidecar("listener").unwrap();
-            let (mut rx, mut _child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
+            let (mut rx, child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
+            let state = app.state::<server::ServerState>();
+
+            // 保存 child 句柄并记录运行状态，否则 setup 返回后 sidecar 可能失去生命周期管理。
+            state.set_listener_running(true);
+            state.set_listener_child(child);
+            let listener_running = state.listener_running_handle();
 
             tauri::async_runtime::spawn(async move {
                 // 读取诸如 stdout 之类的事件
@@ -29,6 +46,7 @@ pub fn init_and_run() {
                             warn!("[Sidecar STDERR]: {}", String::from_utf8_lossy(&line));
                         }
                         CommandEvent::Terminated(payload) => {
+                            listener_running.store(false, Ordering::SeqCst);
                             warn!("[Sidecar] Terminated: {:?}", payload.code);
                         }
                         _ => {}
