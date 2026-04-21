@@ -1,5 +1,6 @@
 use crate::server;
-use log::{info, warn};
+use database::{api::insert_input_event, db::DatabaseManager, models::InputEvent};
+use log::warn;
 use std::sync::atomic::Ordering;
 use tauri::Manager;
 use tauri_plugin_shell::process::CommandEvent;
@@ -25,7 +26,11 @@ pub fn init_and_run() {
         .manage(server_state)
         .invoke_handler(server::router::handler())
         .setup(|app| {
-            let sidecar_command = app.shell().sidecar("listener").unwrap();
+            let sidecar_command = app
+                .shell()
+                .sidecar("listener")
+                .unwrap()
+                .env("HOROLOGION_LISTENER_TRANSPORT", "stdio");
             let (mut rx, child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
             let state = app.state::<server::ServerState>();
 
@@ -33,13 +38,15 @@ pub fn init_and_run() {
             state.set_listener_running(true);
             state.set_listener_child(child);
             let listener_running = state.listener_running_handle();
+            let db = state.db().clone();
 
             tauri::async_runtime::spawn(async move {
+                let mut stdout_buffer = String::new();
                 // 读取诸如 stdout 之类的事件
                 while let Some(event) = rx.recv().await {
                     match event {
                         CommandEvent::Stdout(line) => {
-                            info!("[Sidecar STDOUT]: {}", String::from_utf8_lossy(&line));
+                            handle_listener_stdout(&db, &line, &mut stdout_buffer);
                         }
                         CommandEvent::Stderr(line) => {
                             // 打印错误流到主程序终端
@@ -57,6 +64,35 @@ pub fn init_and_run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn handle_listener_stdout(db: &DatabaseManager, chunk: &[u8], buffer: &mut String) {
+    buffer.push_str(&String::from_utf8_lossy(chunk));
+
+    while let Some(line_end) = buffer.find('\n') {
+        let line = buffer.drain(..=line_end).collect::<String>();
+        save_listener_event(db, line.trim());
+    }
+}
+
+fn save_listener_event(db: &DatabaseManager, payload: &str) {
+    if payload.is_empty() {
+        return;
+    }
+
+    match serde_json::from_str::<InputEvent>(payload) {
+        Ok(input_event) => {
+            if let Err(error) = db.with_connection(|conn| insert_input_event(conn, &input_event)) {
+                warn!("Failed to save sidecar input event: {}", error);
+            }
+        }
+        Err(error) => {
+            warn!(
+                "Failed to parse sidecar input event: {}; payload: {}",
+                error, payload
+            );
+        }
+    }
 }
 
 pub fn init_log() {
