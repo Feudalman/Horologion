@@ -31,6 +31,8 @@ import {
 } from "@/lib/api";
 import { formatCompactDateTime } from "@/lib/format";
 
+const topApplicationsLimit = 10;
+
 function compactNumber(value: number | undefined, locale: string) {
   return new Intl.NumberFormat(locale, {
     notation: "compact",
@@ -61,6 +63,7 @@ export function OverviewPage() {
   const status = statusQuery.data;
   const summary = summaryQuery.data;
   const events = eventsQuery.data ?? [];
+  const topApps = (summary?.topApps ?? []).slice(0, topApplicationsLimit);
 
   return (
     <div className="flex flex-col gap-5 pb-1">
@@ -192,7 +195,7 @@ export function OverviewPage() {
             <CardTitle>{t("overview.topApplications.title")}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {(summary?.topApps ?? []).map((app) => (
+            {topApps.map((app) => (
               <div className="flex flex-col gap-2" key={app.appName}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate text-sm font-medium">{app.appName}</span>
