@@ -27,6 +27,7 @@ export const settingsI18n = {
         runMode: "运行模式",
         theme: "主题",
         version: "版本",
+        databaseSize: "数据库大小",
         mode: {
           development: "开发",
           production: "生产",
@@ -70,6 +71,7 @@ export const settingsI18n = {
         runMode: "Run mode",
         theme: "Theme",
         version: "Version",
+        databaseSize: "Database size",
         mode: {
           development: "Development",
           production: "Production",

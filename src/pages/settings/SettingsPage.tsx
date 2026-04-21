@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   Monitor,
   Moon,
+  HardDrive,
   Server,
   Sun,
 } from "lucide-react";
@@ -20,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getAppSettings } from "@/lib/api";
+import { getAppSettings, getDatabaseFileSize } from "@/lib/api";
 import { type SupportedLanguage } from "@/lib/i18n";
 import { type Theme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,13 @@ export function SettingsPage() {
     queryKey: ["app-settings"],
     queryFn: getAppSettings,
   });
+  const databaseSizeQuery = useQuery({
+    queryKey: ["database-file-size"],
+    queryFn: getDatabaseFileSize,
+    refetchInterval: 10_000,
+  });
   const settings = settingsQuery.data;
+  const databaseSize = databaseSizeQuery.data;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -183,6 +190,20 @@ export function SettingsPage() {
             label={t("settings.runtime.version")}
             value={settings?.version ?? t("common.loading")}
           />
+          <Separator />
+          <InfoRow
+            icon={HardDrive}
+            label={t("settings.runtime.databaseSize")}
+            value={
+              databaseSize
+                ? formatFileSize(
+                    databaseSize.sizeBytes,
+                    i18n.language,
+                    t("settings.database.inMemory"),
+                  )
+                : t("common.loading")
+            }
+          />
         </CardContent>
       </Card>
 
@@ -205,6 +226,33 @@ export function SettingsPage() {
       </Card>
     </div>
   );
+}
+
+function formatFileSize(
+  bytes: number | null,
+  locale: string,
+  emptyText: string,
+) {
+  if (bytes === null) {
+    return emptyText;
+  }
+
+  if (bytes < 1024) {
+    return new Intl.NumberFormat(locale).format(bytes) + " B";
+  }
+
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${new Intl.NumberFormat(locale, {
+    maximumFractionDigits: value >= 10 ? 1 : 2,
+  }).format(value)} ${units[unitIndex]}`;
 }
 
 function InfoRow({
