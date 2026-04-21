@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getAppStatus } from "@/lib/mock-api";
+import { getAppSettings } from "@/lib/api";
 import { type SupportedLanguage } from "@/lib/i18n";
 import { type Theme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -71,11 +71,11 @@ const languageOptions: Array<{
 export function SettingsPage() {
   const { i18n, t } = useTranslation();
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const statusQuery = useQuery({
-    queryKey: ["settings-status"],
-    queryFn: getAppStatus,
+  const settingsQuery = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: getAppSettings,
   });
-  const status = statusQuery.data;
+  const settings = settingsQuery.data;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -164,8 +164,8 @@ export function SettingsPage() {
             icon={Server}
             label={t("settings.runtime.runMode")}
             value={
-              status?.runMode
-                ? t(`settings.runtime.mode.${status.runMode}`)
+              settings?.runMode
+                ? t(`settings.runtime.mode.${settings.runMode}`)
                 : t("common.loading")
             }
           />
@@ -181,7 +181,7 @@ export function SettingsPage() {
           <InfoRow
             icon={Database}
             label={t("settings.runtime.version")}
-            value={status?.version ?? t("common.loading")}
+            value={settings?.version ?? t("common.loading")}
           />
         </CardContent>
       </Card>
@@ -196,7 +196,9 @@ export function SettingsPage() {
         <CardContent>
           <div className="rounded-md border bg-muted/40 p-3 font-mono text-sm text-muted-foreground">
             <div className="break-all">
-              {status?.databasePath ?? t("common.loading")}
+              {settings
+                ? settings.databasePath ?? t("settings.database.inMemory")
+                : t("common.loading")}
             </div>
           </div>
         </CardContent>

@@ -28,9 +28,13 @@ import {
   getActivitySummary,
   getAppStatus,
   listRecentEvents,
-} from "@/lib/mock-api";
+} from "@/lib/api";
 
-function formatDateTime(value: string | undefined, locale: string, emptyText: string) {
+function formatDateTime(
+  value: string | null | undefined,
+  locale: string,
+  emptyText: string,
+) {
   if (!value) {
     return emptyText;
   }
@@ -54,14 +58,17 @@ export function OverviewPage() {
   const statusQuery = useQuery({
     queryKey: ["app-status"],
     queryFn: getAppStatus,
+    refetchInterval: 5_000,
   });
   const summaryQuery = useQuery({
     queryKey: ["activity-summary"],
     queryFn: getActivitySummary,
+    refetchInterval: 5_000,
   });
   const eventsQuery = useQuery({
     queryKey: ["recent-events"],
     queryFn: listRecentEvents,
+    refetchInterval: 5_000,
   });
 
   const status = statusQuery.data;

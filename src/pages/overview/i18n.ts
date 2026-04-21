@@ -5,7 +5,7 @@ export const overviewI18n = {
     overview: {
       metrics: {
         totalEvents: "总事件数",
-        totalEventsCaption: "当前本地样例中的捕获事件",
+        totalEventsCaption: "数据库中已捕获的事件",
         keyboardEvents: "键盘事件",
         keyboardEventsCaption: "按下与释放信号",
         pointerEvents: "鼠标事件",
@@ -16,7 +16,7 @@ export const overviewI18n = {
       },
       recentEvents: {
         title: "最近事件",
-        description: "当前使用占位数据，后续会接入 Tauri 查询接口。",
+        description: "从 Tauri 查询接口读取的最新输入记录。",
         time: "时间",
       },
       topApplications: {
@@ -29,7 +29,7 @@ export const overviewI18n = {
     overview: {
       metrics: {
         totalEvents: "Total events",
-        totalEventsCaption: "Captured in the current local sample",
+        totalEventsCaption: "Captured in the database",
         keyboardEvents: "Keyboard events",
         keyboardEventsCaption: "Press and release signals",
         pointerEvents: "Pointer events",
@@ -40,7 +40,7 @@ export const overviewI18n = {
       },
       recentEvents: {
         title: "Recent events",
-        description: "Placeholder data for the upcoming Tauri query interface.",
+        description: "Latest input records from the Tauri query interface.",
         time: "Time",
       },
       topApplications: {
