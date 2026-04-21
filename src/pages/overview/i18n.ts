@@ -16,12 +16,10 @@ export const overviewI18n = {
       },
       recentEvents: {
         title: "最近事件",
-        description: "从 Tauri 查询接口读取的最新输入记录。",
         time: "时间",
       },
       topApplications: {
         title: "活跃应用",
-        description: "按活动窗口所属应用统计的事件分布。",
       },
     },
   },
@@ -40,12 +38,10 @@ export const overviewI18n = {
       },
       recentEvents: {
         title: "Recent events",
-        description: "Latest input records from the Tauri query interface.",
         time: "Time",
       },
       topApplications: {
         title: "Top applications",
-        description: "Activity distribution by active window application.",
       },
     },
   },
