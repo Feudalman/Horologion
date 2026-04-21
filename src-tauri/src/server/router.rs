@@ -12,6 +12,8 @@ pub fn handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'stat
         settings::get_app_status,
         settings::get_app_settings,
         settings::get_database_file_size,
+        settings::start_listener,
+        settings::stop_listener,
         events::get_activity_summary,
         events::list_input_events,
         events::get_input_event,

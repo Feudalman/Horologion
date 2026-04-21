@@ -95,4 +95,10 @@ impl ServerState {
         let mut guard = self.listener_child.lock().unwrap();
         *guard = Some(child);
     }
+
+    /// 取出 sidecar 子进程句柄，通常用于主动停止 listener。
+    pub fn take_listener_child(&self) -> Option<CommandChild> {
+        let mut guard = self.listener_child.lock().unwrap();
+        guard.take()
+    }
 }

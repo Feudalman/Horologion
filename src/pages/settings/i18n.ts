@@ -21,6 +21,15 @@ export const settingsI18n = {
         en: "English",
         enDescription: "Use the English interface.",
       },
+      listener: {
+        title: "监听器",
+        description: "控制键鼠事件监听 sidecar 的运行状态。",
+        status: "当前状态",
+        running: "正在监听",
+        stopped: "已停用",
+        start: "启动监听",
+        stop: "停用监听",
+      },
       runtime: {
         title: "运行信息",
         description: "由 Tauri command 提供的当前应用运行状态。",
@@ -64,6 +73,15 @@ export const settingsI18n = {
         zhDescription: "使用中文界面。",
         en: "English",
         enDescription: "Use the English interface.",
+      },
+      listener: {
+        title: "Listener",
+        description: "Control the keyboard and pointer listener sidecar.",
+        status: "Current status",
+        running: "Listening",
+        stopped: "Stopped",
+        start: "Start listener",
+        stop: "Stop listener",
       },
       runtime: {
         title: "Runtime",

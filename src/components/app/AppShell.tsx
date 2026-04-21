@@ -109,7 +109,7 @@ export function AppShell() {
         </Badge>
       </header>
 
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
+      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
         <aside
           className={cn(
             "sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 border-r bg-card transition-[width] duration-200",
@@ -163,9 +163,9 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6">
-            <div className="flex min-w-0 flex-col gap-1">
+        <main className="min-w-0 flex-1 overflow-hidden">
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6">
+            <div className="flex min-w-0 shrink-0 flex-col gap-1">
               <h1 className="truncate text-2xl font-semibold tracking-normal">
                 {t(page.titleKey)}
               </h1>
@@ -173,7 +173,9 @@ export function AppShell() {
                 {t(page.subtitleKey)}
               </p>
             </div>
-            <Outlet />
+            <div className="min-h-0 flex-1">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

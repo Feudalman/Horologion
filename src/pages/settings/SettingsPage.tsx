@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Database,
+  EarOff,
   Languages,
   type LucideIcon,
   Monitor,
   Moon,
   HardDrive,
+  Radio,
   Server,
   Sun,
 } from "lucide-react";
@@ -21,7 +23,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getAppSettings, getDatabaseFileSize } from "@/lib/api";
+import {
+  getAppSettings,
+  getAppStatus,
+  getDatabaseFileSize,
+  startListener,
+  stopListener,
+  type AppStatus,
+} from "@/lib/api";
 import { type SupportedLanguage } from "@/lib/i18n";
 import { type Theme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -76,13 +85,23 @@ export function SettingsPage() {
     queryKey: ["app-settings"],
     queryFn: getAppSettings,
   });
+  const statusQuery = useQuery({
+    queryKey: ["app-status"],
+    queryFn: getAppStatus,
+    refetchInterval: 5_000,
+  });
   const databaseSizeQuery = useQuery({
     queryKey: ["database-file-size"],
     queryFn: getDatabaseFileSize,
     refetchInterval: 10_000,
   });
   const settings = settingsQuery.data;
+  const status = statusQuery.data;
   const databaseSize = databaseSizeQuery.data;
+  const startListenerMutation = useListenerMutation(startListener);
+  const stopListenerMutation = useListenerMutation(stopListener);
+  const listenerActionPending =
+    startListenerMutation.isPending || stopListenerMutation.isPending;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -207,6 +226,47 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("settings.listener.title")}</CardTitle>
+          <CardDescription>
+            {t("settings.listener.description")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <InfoRow
+            icon={status?.listenerRunning ? Radio : EarOff}
+            label={t("settings.listener.status")}
+            value={
+              status
+                ? status.listenerRunning
+                  ? t("settings.listener.running")
+                  : t("settings.listener.stopped")
+                : t("common.loading")
+            }
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={listenerActionPending || status?.listenerRunning === true}
+              onClick={() => startListenerMutation.mutate()}
+              type="button"
+            >
+              <Radio />
+              {t("settings.listener.start")}
+            </Button>
+            <Button
+              disabled={listenerActionPending || status?.listenerRunning === false}
+              onClick={() => stopListenerMutation.mutate()}
+              type="button"
+              variant="outline"
+            >
+              <EarOff />
+              {t("settings.listener.stop")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="xl:col-span-2">
         <CardHeader>
           <CardTitle>{t("settings.database.title")}</CardTitle>
@@ -226,6 +286,17 @@ export function SettingsPage() {
       </Card>
     </div>
   );
+}
+
+function useListenerMutation(action: () => Promise<AppStatus>) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: action,
+    onSuccess: (nextStatus) => {
+      queryClient.setQueryData(["app-status"], nextStatus);
+    },
+  });
 }
 
 function formatFileSize(

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { PaginationControls } from "@/components/app/PaginationControls";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ import {
   type InputEventKind,
   type InputEventSortBy,
   type SortDirection,
+  getInputEvent,
+  getObservedWindow,
   listInputEvents,
 } from "@/lib/api";
 import { formatCompactDateTime } from "@/lib/format";
@@ -123,8 +125,8 @@ export function EventsPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="gap-4">
+    <Card className="flex h-full min-h-0 flex-col">
+      <CardHeader className="shrink-0 gap-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <CardTitle>{t("eventsPage.table.title")}</CardTitle>
           <form
@@ -180,68 +182,70 @@ export function EventsPage() {
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-36 whitespace-nowrap">
-                {t("eventsPage.table.time")}
-              </TableHead>
-              <TableHead className="whitespace-nowrap">
-                {t("eventsPage.table.type")}
-              </TableHead>
-              <TableHead>{t("eventsPage.table.value")}</TableHead>
-              <TableHead className="min-w-36">{t("eventsPage.table.app")}</TableHead>
-              <TableHead className="min-w-64">{t("eventsPage.table.window")}</TableHead>
-              <TableHead className="min-w-32">{t("eventsPage.table.collector")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.length === 0 ? (
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="min-h-0 flex-1 overflow-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell className="text-center text-muted-foreground" colSpan={6}>
-                  {eventsQuery.isFetching
-                    ? t("common.loading")
-                    : t("eventsPage.table.empty")}
-                </TableCell>
+                <TableHead className="min-w-36 whitespace-nowrap">
+                  {t("eventsPage.table.time")}
+                </TableHead>
+                <TableHead className="whitespace-nowrap">
+                  {t("eventsPage.table.type")}
+                </TableHead>
+                <TableHead>{t("eventsPage.table.value")}</TableHead>
+                <TableHead className="min-w-36">{t("eventsPage.table.app")}</TableHead>
+                <TableHead className="min-w-64">{t("eventsPage.table.window")}</TableHead>
+                <TableHead className="min-w-32">{t("eventsPage.table.collector")}</TableHead>
               </TableRow>
-            ) : (
-              events.map((event) => (
-                <TableRow
-                  className="cursor-pointer"
-                  key={event.id}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                  onKeyDown={(keyboardEvent) => {
-                    if (keyboardEvent.key === "Enter") {
-                      navigate(`/events/${event.id}`);
-                    }
-                  }}
-                  role="link"
-                  tabIndex={0}
-                >
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {formatCompactDateTime(event.occurredAt)}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge className="whitespace-nowrap" variant="outline">
-                      {t(`events.kind.${event.kind}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-56 truncate font-mono text-xs">
-                    {event.value}
-                  </TableCell>
-                  <TableCell className="font-medium">{event.appName}</TableCell>
-                  <TableCell className="max-w-80 truncate text-muted-foreground">
-                    {event.windowTitle}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {event.collectorName} {event.collectorVersion}
+            </TableHeader>
+            <TableBody>
+              {events.length === 0 ? (
+                <TableRow>
+                  <TableCell className="text-center text-muted-foreground" colSpan={6}>
+                    {eventsQuery.isFetching
+                      ? t("common.loading")
+                      : t("eventsPage.table.empty")}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                events.map((event) => (
+                  <TableRow
+                    className="cursor-pointer"
+                    key={event.id}
+                    onClick={() => navigate(`/events/${event.id}`)}
+                    onKeyDown={(keyboardEvent) => {
+                      if (keyboardEvent.key === "Enter") {
+                        navigate(`/events/${event.id}`);
+                      }
+                    }}
+                    role="link"
+                    tabIndex={0}
+                  >
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {formatCompactDateTime(event.occurredAt)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge className="whitespace-nowrap" variant="outline">
+                        {t(`events.kind.${event.kind}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-56 truncate font-mono text-xs">
+                      {event.value}
+                    </TableCell>
+                    <TableCell className="font-medium">{event.appName}</TableCell>
+                    <TableCell className="max-w-80 truncate text-muted-foreground">
+                      {event.windowTitle}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {event.collectorName} {event.collectorVersion}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
         <PaginationControls
           onPageChange={setPage}
@@ -261,15 +265,166 @@ export function EventsPage() {
 
 export function EventDetailPlaceholderPage() {
   const { t } = useTranslation();
+  const { eventId } = useParams();
+  const parsedEventId = Number(eventId);
+  const eventQuery = useQuery({
+    queryKey: ["input-event", parsedEventId],
+    queryFn: () => getInputEvent(parsedEventId),
+    enabled: Number.isFinite(parsedEventId),
+  });
+  const event = eventQuery.data;
+  const windowQuery = useQuery({
+    queryKey: ["observed-window", event?.windowId],
+    queryFn: () => getObservedWindow(event?.windowId ?? 0),
+    enabled: Boolean(event?.windowId),
+  });
+  const window = windowQuery.data;
 
+  if (eventQuery.isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-sm text-muted-foreground">
+          {t("common.loading")}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!event) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-sm text-muted-foreground">
+          {t("eventsPage.detail.notFound")}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-5 overflow-auto pb-1">
+      <div>
+        <Button asChild size="sm" variant="outline">
+          <Link to="/events">
+            <ArrowLeft />
+            {t("eventsPage.detail.back")}
+          </Link>
+        </Button>
+      </div>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("eventsPage.detail.title")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <DetailItem label={t("eventsPage.detail.eventId")} value={`#${event.id}`} />
+            <DetailItem
+              label={t("eventsPage.detail.time")}
+              value={formatCompactDateTime(event.occurredAt)}
+            />
+            <DetailItem
+              label={t("eventsPage.detail.type")}
+              value={t(`events.kind.${event.kind}`)}
+            />
+            <DetailItem label={t("eventsPage.detail.value")} value={event.value} />
+            <DetailItem
+              label={t("eventsPage.detail.deltaX")}
+              value={formatNullableNumber(event.deltaX)}
+            />
+            <DetailItem
+              label={t("eventsPage.detail.deltaY")}
+              value={formatNullableNumber(event.deltaY)}
+            />
+            <DetailItem
+              label={t("eventsPage.detail.collector")}
+              value={`${event.collectorName} ${event.collectorVersion}`}
+            />
+            <DetailItem
+              label={t("eventsPage.detail.createdAt")}
+              value={formatCompactDateTime(event.createdAt)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("eventsPage.detail.window")}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {event.windowId ? (
+              <>
+                <DetailItem
+                  label={t("eventsPage.detail.windowId")}
+                  value={`#${event.windowId}`}
+                />
+                <DetailItem
+                  label={t("eventsPage.table.app")}
+                  value={window?.appName ?? t("common.loading")}
+                />
+                <DetailItem
+                  label={t("eventsPage.table.window")}
+                  value={window?.title || "-"}
+                />
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/windows/${event.windowId}`}>
+                    <ExternalLink />
+                    {t("eventsPage.detail.openWindow")}
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("eventsPage.detail.noWindow")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <JsonCard title={t("eventsPage.detail.rawEvent")} value={event.rawEvent} />
+        <JsonCard title={t("eventsPage.detail.rawWindow")} value={event.rawWindow} />
+      </section>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="break-words text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function JsonCard({ title, value }: { title: string; value: string | null }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("eventsPage.detail.title")}</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        {t("eventsPage.detail.description")}
+      <CardContent>
+        <pre className="max-h-80 overflow-auto rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+          {formatJson(value)}
+        </pre>
       </CardContent>
     </Card>
   );
+}
+
+function formatNullableNumber(value: number | null) {
+  return value === null ? "-" : String(value);
+}
+
+function formatJson(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch {
+    return value;
+  }
 }
