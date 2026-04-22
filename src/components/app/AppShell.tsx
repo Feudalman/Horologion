@@ -2,6 +2,8 @@ import * as React from "react";
 import {
   Activity,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Database,
   Keyboard,
@@ -10,7 +12,13 @@ import {
   Settings,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,30 +48,24 @@ const navItems = [
   },
 ];
 
-const pageTitles: Record<string, { titleKey: string; subtitleKey: string }> = {
+const pageTitles: Record<string, { titleKey: string }> = {
   "/overview": {
     titleKey: "page.overview.title",
-    subtitleKey: "page.overview.subtitle",
   },
   "/events": {
     titleKey: "page.events.title",
-    subtitleKey: "page.events.subtitle",
   },
   "/events/:eventId": {
     titleKey: "page.eventDetail.title",
-    subtitleKey: "page.eventDetail.subtitle",
   },
   "/windows": {
     titleKey: "page.windows.title",
-    subtitleKey: "page.windows.subtitle",
   },
   "/windows/:windowId": {
     titleKey: "page.windowDetail.title",
-    subtitleKey: "page.windowDetail.subtitle",
   },
   "/settings": {
     titleKey: "page.settings.title",
-    subtitleKey: "page.settings.subtitle",
   },
 };
 
@@ -72,10 +74,13 @@ export function AppShell() {
   const [collapsed, setCollapsed] = React.useState(false);
   const location = useLocation();
   const page = getPageTitle(location.pathname);
+  const isTablePage =
+    location.pathname === "/events" || location.pathname === "/windows";
+  const historyControls = useBrowserHistoryControls();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
+    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+      <header className="z-40 flex h-14 shrink-0 items-center border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
         <Button
           aria-label={
             collapsed ? t("common.expandSidebar") : t("common.collapseSidebar")
@@ -103,16 +108,39 @@ export function AppShell() {
           </div>
         </div>
 
+        <div className="mr-2 flex items-center gap-1">
+          <Button
+            aria-label={t("common.goBack")}
+            disabled={!historyControls.canGoBack}
+            onClick={historyControls.goBack}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            aria-label={t("common.goForward")}
+            disabled={!historyControls.canGoForward}
+            onClick={historyControls.goForward}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+
         <Badge className="hidden gap-1.5 sm:inline-flex" variant="success">
           <Circle className="size-2 fill-current" />
           {t("common.listenerReady")}
         </Badge>
       </header>
 
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside
           className={cn(
-            "sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 border-r bg-card transition-[width] duration-200",
+            "h-full shrink-0 border-r bg-card transition-[width] duration-200",
             collapsed ? "w-16" : "w-60",
             "max-sm:w-16",
           )}
@@ -163,17 +191,31 @@ export function AppShell() {
           </nav>
         </aside>
 
-        <main className="min-w-0 flex-1">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6">
-            <div className="flex min-w-0 flex-col gap-1">
+        <main
+          className={cn(
+            "min-w-0 flex-1",
+            isTablePage ? "overflow-hidden" : "overflow-auto",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 sm:p-5 lg:p-6",
+              isTablePage ? "h-full min-h-0 overflow-hidden" : "min-h-full",
+            )}
+          >
+            <div className="flex min-w-0 shrink-0 flex-col gap-1">
               <h1 className="truncate text-2xl font-semibold tracking-normal">
                 {t(page.titleKey)}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {t(page.subtitleKey)}
-              </p>
             </div>
-            <Outlet />
+            <div
+              className={cn(
+                "min-h-0 flex-1",
+                isTablePage && "overflow-hidden",
+              )}
+            >
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>
@@ -191,4 +233,36 @@ function getPageTitle(pathname: string) {
   }
 
   return pageTitles[pathname] ?? pageTitles["/overview"];
+}
+
+function useBrowserHistoryControls() {
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const location = useLocation();
+  const currentIndex = getHistoryIndex();
+  const [maxIndex, setMaxIndex] = React.useState(currentIndex);
+
+  React.useEffect(() => {
+    const nextIndex = getHistoryIndex();
+
+    setMaxIndex((value) => {
+      if (navigationType === "PUSH") {
+        return nextIndex;
+      }
+
+      return Math.max(value, nextIndex);
+    });
+  }, [location.key, navigationType]);
+
+  return {
+    canGoBack: currentIndex > 0,
+    canGoForward: currentIndex < maxIndex,
+    goBack: () => navigate(-1),
+    goForward: () => navigate(1),
+  };
+}
+
+function getHistoryIndex() {
+  const state = window.history.state as { idx?: number } | null;
+  return state?.idx ?? 0;
 }

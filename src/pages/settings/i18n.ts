@@ -5,7 +5,6 @@ export const settingsI18n = {
     settings: {
       theme: {
         title: "主题模式",
-        description: "在浅色、深色和跟随系统之间切换。",
         light: "浅色",
         lightDescription: "适合日间工作的明亮界面。",
         dark: "深色",
@@ -15,15 +14,19 @@ export const settingsI18n = {
       },
       language: {
         title: "语言",
-        description: "当前仅支持中文和英文。",
         zh: "中文",
-        zhDescription: "使用中文界面。",
         en: "English",
-        enDescription: "Use the English interface.",
+      },
+      listener: {
+        title: "监听器",
+        status: "当前状态",
+        running: "正在监听",
+        stopped: "已停用",
+        start: "启动监听",
+        stop: "停用监听",
       },
       runtime: {
         title: "运行信息",
-        description: "由 Tauri command 提供的当前应用运行状态。",
         runMode: "运行模式",
         theme: "主题",
         version: "版本",
@@ -40,7 +43,6 @@ export const settingsI18n = {
       },
       database: {
         title: "数据库路径",
-        description: "当前应用连接的数据库位置。",
         inMemory: "内存数据库",
       },
     },
@@ -49,7 +51,6 @@ export const settingsI18n = {
     settings: {
       theme: {
         title: "Theme mode",
-        description: "Switch between light, dark, and system-controlled appearance.",
         light: "Light",
         lightDescription: "Bright interface for daytime work.",
         dark: "Dark",
@@ -59,15 +60,19 @@ export const settingsI18n = {
       },
       language: {
         title: "Language",
-        description: "Only Chinese and English are supported for now.",
         zh: "中文",
-        zhDescription: "使用中文界面。",
         en: "English",
-        enDescription: "Use the English interface.",
+      },
+      listener: {
+        title: "Listener",
+        status: "Current status",
+        running: "Listening",
+        stopped: "Stopped",
+        start: "Start listener",
+        stop: "Stop listener",
       },
       runtime: {
         title: "Runtime",
-        description: "Current application runtime state from Tauri commands.",
         runMode: "Run mode",
         theme: "Theme",
         version: "Version",
@@ -84,7 +89,6 @@ export const settingsI18n = {
       },
       database: {
         title: "Database path",
-        description: "Database location used by the current application.",
         inMemory: "In-memory database",
       },
     },

@@ -1,12 +1,21 @@
 use crate::server;
 use database::{api::insert_input_event, db::DatabaseManager, models::InputEvent};
 use log::warn;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
-use tauri::Manager;
+use tauri::{AppHandle, Manager, PhysicalSize, Runtime, Size, WindowEvent};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
 const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
+const WINDOW_STATE_FILE: &str = "window-state.json";
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+struct SavedWindowSize {
+    width: u32,
+    height: u32,
+}
 
 /// 初始化并运行应用
 pub fn init_and_run() {
@@ -28,44 +37,70 @@ pub fn init_and_run() {
         .manage(server_state)
         .invoke_handler(server::router::handler())
         .setup(|app| {
-            let sidecar_command = app
-                .shell()
-                .sidecar("listener")
-                .unwrap()
-                .env("HOROLOGION_LISTENER_TRANSPORT", "stdio");
-            let (mut rx, child) = sidecar_command.spawn().expect("Failed to spawn sidecar");
+            restore_main_window_size(app);
+            watch_main_window_size(app);
+
             let state = app.state::<server::ServerState>();
-
-            // 保存 child 句柄并记录运行状态，否则 setup 返回后 sidecar 可能失去生命周期管理。
-            state.set_listener_running(true);
-            state.set_listener_child(child);
-            let listener_running = state.listener_running_handle();
-            let db = state.db().clone();
-
-            tauri::async_runtime::spawn(async move {
-                let mut stdout_buffer = String::new();
-                // 读取诸如 stdout 之类的事件
-                while let Some(event) = rx.recv().await {
-                    match event {
-                        CommandEvent::Stdout(line) => {
-                            handle_listener_stdout(&db, &line, &mut stdout_buffer);
-                        }
-                        CommandEvent::Stderr(line) => {
-                            // 打印错误流到主程序终端
-                            warn!("[Sidecar STDERR]: {}", String::from_utf8_lossy(&line));
-                        }
-                        CommandEvent::Terminated(payload) => {
-                            listener_running.store(false, Ordering::SeqCst);
-                            warn!("[Sidecar] Terminated: {:?}", payload.code);
-                        }
-                        _ => {}
-                    }
-                }
-            });
+            start_listener_sidecar(app.handle(), &state)?;
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+pub fn start_listener_sidecar<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    state: &server::ServerState,
+) -> Result<(), String> {
+    if state.is_listener_running() {
+        return Ok(());
+    }
+
+    let sidecar_command = app_handle
+        .shell()
+        .sidecar("listener")
+        .map_err(|error| error.to_string())?
+        .env("HOROLOGION_LISTENER_TRANSPORT", "stdio");
+    let (mut rx, child) = sidecar_command.spawn().map_err(|error| error.to_string())?;
+
+    // 保存 child 句柄并记录运行状态，否则 setup 返回后 sidecar 可能失去生命周期管理。
+    state.set_listener_running(true);
+    state.set_listener_child(child);
+    let listener_running = state.listener_running_handle();
+    let db = state.db().clone();
+
+    tauri::async_runtime::spawn(async move {
+        let mut stdout_buffer = String::new();
+        // 读取诸如 stdout 之类的事件
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(line) => {
+                    handle_listener_stdout(&db, &line, &mut stdout_buffer);
+                }
+                CommandEvent::Stderr(line) => {
+                    // 打印错误流到主程序终端
+                    warn!("[Sidecar STDERR]: {}", String::from_utf8_lossy(&line));
+                }
+                CommandEvent::Terminated(payload) => {
+                    listener_running.store(false, Ordering::SeqCst);
+                    warn!("[Sidecar] Terminated: {:?}", payload.code);
+                }
+                _ => {}
+            }
+        }
+    });
+
+    Ok(())
+}
+
+pub fn stop_listener_sidecar(state: &server::ServerState) -> Result<(), String> {
+    state.set_listener_running(false);
+
+    if let Some(child) = state.take_listener_child() {
+        child.kill().map_err(|error| error.to_string())?;
+    }
+
+    Ok(())
 }
 
 fn handle_listener_stdout(db: &DatabaseManager, chunk: &[u8], buffer: &mut String) {
@@ -109,4 +144,76 @@ pub fn init_log() {
     }
     // 初始化日志
     env_logger::init();
+}
+
+fn restore_main_window_size(app: &tauri::App) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+
+    let Some(size) = read_saved_window_size(window_state_path(app.handle())) else {
+        return;
+    };
+
+    if let Err(error) = window.set_size(Size::Physical(PhysicalSize {
+        width: size.width,
+        height: size.height,
+    })) {
+        warn!("Failed to restore window size: {}", error);
+    }
+}
+
+fn watch_main_window_size(app: &tauri::App) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let path = window_state_path(app.handle());
+
+    window.on_window_event(move |event| {
+        if let WindowEvent::Resized(size) = event {
+            if size.width < 400 || size.height < 300 {
+                return;
+            }
+
+            let saved_size = SavedWindowSize {
+                width: size.width,
+                height: size.height,
+            };
+
+            if let Err(error) = write_saved_window_size(&path, saved_size) {
+                warn!("Failed to persist window size: {}", error);
+            }
+        }
+    });
+}
+
+fn window_state_path<R: Runtime>(app_handle: &AppHandle<R>) -> Option<PathBuf> {
+    app_handle
+        .path()
+        .app_config_dir()
+        .map(|dir| dir.join(WINDOW_STATE_FILE))
+        .map_err(|error| {
+            warn!("Failed to resolve app config directory: {}", error);
+            error
+        })
+        .ok()
+}
+
+fn read_saved_window_size(path: Option<PathBuf>) -> Option<SavedWindowSize> {
+    let path = path?;
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+fn write_saved_window_size(path: &Option<PathBuf>, size: SavedWindowSize) -> Result<(), String> {
+    let Some(path) = path else {
+        return Ok(());
+    };
+
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+
+    let content = serde_json::to_string_pretty(&size).map_err(|error| error.to_string())?;
+    std::fs::write(path, content).map_err(|error| error.to_string())
 }

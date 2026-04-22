@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -31,6 +30,8 @@ import {
   listRecentEvents,
 } from "@/lib/api";
 import { formatCompactDateTime } from "@/lib/format";
+
+const topApplicationsLimit = 10;
 
 function compactNumber(value: number | undefined, locale: string) {
   return new Intl.NumberFormat(locale, {
@@ -62,9 +63,10 @@ export function OverviewPage() {
   const status = statusQuery.data;
   const summary = summaryQuery.data;
   const events = eventsQuery.data ?? [];
+  const topApps = (summary?.topApps ?? []).slice(0, topApplicationsLimit);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pb-1">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={Activity}
@@ -112,9 +114,6 @@ export function OverviewPage() {
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{t("overview.recentEvents.title")}</CardTitle>
-              <CardDescription>
-                {t("overview.recentEvents.description")}
-              </CardDescription>
             </div>
             <Badge
               className="w-fit gap-1.5"
@@ -194,12 +193,9 @@ export function OverviewPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t("overview.topApplications.title")}</CardTitle>
-            <CardDescription>
-              {t("overview.topApplications.description")}
-            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {(summary?.topApps ?? []).map((app) => (
+            {topApps.map((app) => (
               <div className="flex flex-col gap-2" key={app.appName}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate text-sm font-medium">{app.appName}</span>

@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use database::db::RunMode;
 use duckdb::OptionalExt;
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, Runtime, State};
 
 /// 前端可展示的运行模式。
 ///
@@ -127,4 +127,21 @@ pub fn get_database_file_size(state: State<'_, ServerState>) -> Result<DatabaseF
     Ok(DatabaseFileSize {
         size_bytes: Some(size_bytes),
     })
+}
+
+/// 启动 listener sidecar。
+#[tauri::command]
+pub fn start_listener<R: Runtime>(
+    app_handle: AppHandle<R>,
+    state: State<'_, ServerState>,
+) -> Result<AppStatus, String> {
+    crate::app::start_listener_sidecar(&app_handle, &state)?;
+    get_app_status(state)
+}
+
+/// 停止 listener sidecar。
+#[tauri::command]
+pub fn stop_listener(state: State<'_, ServerState>) -> Result<AppStatus, String> {
+    crate::app::stop_listener_sidecar(&state)?;
+    get_app_status(state)
 }

@@ -78,7 +78,21 @@ export type InputEventQuery = {
 export type InputEventListItem = InputEventPreview & {
   collectorName: string;
   collectorVersion: string;
+};
+
+export type InputEventDetail = {
+  id: number;
+  occurredAt: string;
+  kind: InputEventKind;
+  value: string;
+  deltaX: number | null;
+  deltaY: number | null;
   windowId: number | null;
+  rawEvent: string | null;
+  rawWindow: string | null;
+  collectorName: string;
+  collectorVersion: string;
+  createdAt: string;
 };
 
 export type ObservedWindowSortBy =
@@ -170,6 +184,21 @@ type BackendInputEventWithWindow = {
   } | null;
 };
 
+type BackendInputEventRecord = {
+  event_id: number;
+  occurred_at: string;
+  kind: InputEventKind;
+  value: string;
+  delta_x: number | null;
+  delta_y: number | null;
+  window_id: number | null;
+  raw_event: string | null;
+  raw_window: string | null;
+  collector_name: string;
+  collector_version: string;
+  created_at: string;
+};
+
 type BackendObservedWindowRecord = {
   window_id: number;
   app_name: string;
@@ -189,14 +218,19 @@ type BackendObservedWindowRecord = {
 export async function getAppStatus() {
   const status = await invoke<BackendAppStatus>("get_app_status");
 
-  return {
-    listenerRunning: status.listener_running,
-    databaseReady: status.database_ready,
-    lastEventAt: status.last_event_at,
-    runMode: status.run_mode,
-    version: status.app_version,
-    databasePath: status.database_path,
-  } satisfies AppStatus;
+  return mapAppStatus(status);
+}
+
+export async function startListener() {
+  const status = await invoke<BackendAppStatus>("start_listener");
+
+  return mapAppStatus(status);
+}
+
+export async function stopListener() {
+  const status = await invoke<BackendAppStatus>("stop_listener");
+
+  return mapAppStatus(status);
 }
 
 export async function getAppSettings() {
@@ -207,6 +241,17 @@ export async function getAppSettings() {
     version: settings.app_version,
     databasePath: settings.database_path,
   } satisfies AppSettings;
+}
+
+function mapAppStatus(status: BackendAppStatus): AppStatus {
+  return {
+    listenerRunning: status.listener_running,
+    databaseReady: status.database_ready,
+    lastEventAt: status.last_event_at,
+    runMode: status.run_mode,
+    version: status.app_version,
+    databasePath: status.database_path,
+  };
 }
 
 export async function getDatabaseFileSize() {
@@ -275,6 +320,14 @@ export async function listInputEvents(query: InputEventQuery = {}) {
   } satisfies PaginatedResponse<InputEventListItem>;
 }
 
+export async function getInputEvent(eventId: number) {
+  const event = await invoke<BackendInputEventRecord | null>("get_input_event", {
+    eventId,
+  });
+
+  return event ? mapInputEventDetail(event) : null;
+}
+
 export async function listObservedWindows(query: ObservedWindowQuery = {}) {
   const response = await invoke<BackendPaginatedResponse<BackendObservedWindowRecord>>(
     "list_observed_windows",
@@ -294,6 +347,17 @@ export async function listObservedWindows(query: ObservedWindowQuery = {}) {
     ...response,
     list: response.list.map(mapObservedWindow),
   } satisfies PaginatedResponse<ObservedWindowListItem>;
+}
+
+export async function getObservedWindow(windowId: number) {
+  const window = await invoke<BackendObservedWindowRecord | null>(
+    "get_observed_window",
+    {
+      windowId,
+    },
+  );
+
+  return window ? mapObservedWindow(window) : null;
 }
 
 function mapInputEvent({
@@ -328,6 +392,23 @@ function mapObservedWindow(window: BackendObservedWindowRecord): ObservedWindowL
     lastSeenAt: window.last_seen_at,
     eventCount: window.event_count,
     contextHash: window.context_hash,
+  };
+}
+
+function mapInputEventDetail(event: BackendInputEventRecord): InputEventDetail {
+  return {
+    id: event.event_id,
+    occurredAt: event.occurred_at,
+    kind: event.kind,
+    value: formatEventValue(event),
+    deltaX: event.delta_x,
+    deltaY: event.delta_y,
+    windowId: event.window_id,
+    rawEvent: event.raw_event,
+    rawWindow: event.raw_window,
+    collectorName: event.collector_name,
+    collectorVersion: event.collector_version,
+    createdAt: event.created_at,
   };
 }
 
