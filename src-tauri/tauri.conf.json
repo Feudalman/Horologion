@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.zirui.horologion",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm build:listener && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm build && pnpm build:listener",
     "frontendDist": "../dist"
   },
   "app": {
