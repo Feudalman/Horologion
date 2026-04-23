@@ -2728,6 +2728,7 @@ dependencies = [
  "core-foundation 0.9.4",
  "core-foundation-sys 0.8.7",
  "database",
+ "dirs 5.0.1",
  "dotenvy",
  "env_logger",
  "log",

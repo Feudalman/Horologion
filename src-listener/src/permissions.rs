@@ -14,6 +14,11 @@ mod platform {
     use core_foundation_sys::dictionary::CFDictionaryRef;
     use core_foundation_sys::string::CFStringRef;
     use log::{info, warn};
+    use std::fs;
+    use std::path::PathBuf;
+
+    const INPUT_MONITORING_PROMPT_MARKER: &str = "macos-input-monitoring.prompted";
+    const ACCESSIBILITY_PROMPT_MARKER: &str = "macos-accessibility.prompted";
 
     pub fn request_required_permissions() {
         let input_monitoring_ready = request_input_monitoring_access();
@@ -40,7 +45,13 @@ mod platform {
             return true;
         }
 
-        unsafe { CGRequestListenEventAccess() }
+        if has_prompt_marker(INPUT_MONITORING_PROMPT_MARKER) {
+            return false;
+        }
+
+        let granted = unsafe { CGRequestListenEventAccess() };
+        mark_prompt_shown(INPUT_MONITORING_PROMPT_MARKER);
+        granted
     }
 
     fn request_accessibility_access() -> bool {
@@ -48,7 +59,13 @@ mod platform {
             return true;
         }
 
-        is_accessibility_trusted(true)
+        if has_prompt_marker(ACCESSIBILITY_PROMPT_MARKER) {
+            return false;
+        }
+
+        let granted = is_accessibility_trusted(true);
+        mark_prompt_shown(ACCESSIBILITY_PROMPT_MARKER);
+        granted
     }
 
     fn is_accessibility_trusted(prompt: bool) -> bool {
@@ -63,6 +80,32 @@ mod platform {
 
             AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef()) != 0
         }
+    }
+
+    fn has_prompt_marker(name: &str) -> bool {
+        prompt_marker_path(name).is_some_and(|path| path.exists())
+    }
+
+    fn mark_prompt_shown(name: &str) {
+        let Some(path) = prompt_marker_path(name) else {
+            warn!("Could not resolve permission prompt marker path");
+            return;
+        };
+
+        if let Some(parent) = path.parent() {
+            if let Err(error) = fs::create_dir_all(parent) {
+                warn!("Failed to create permission prompt marker directory: {}", error);
+                return;
+            }
+        }
+
+        if let Err(error) = fs::write(&path, b"prompted\n") {
+            warn!("Failed to write permission prompt marker: {}", error);
+        }
+    }
+
+    fn prompt_marker_path(name: &str) -> Option<PathBuf> {
+        dirs::config_dir().map(|dir| dir.join("horologion").join("permissions").join(name))
     }
 
     #[link(name = "CoreGraphics", kind = "framework")]
