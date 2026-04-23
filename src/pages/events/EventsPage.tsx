@@ -18,6 +18,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableCellText,
   TableHead,
   TableHeader,
   TableRow,
@@ -87,19 +88,19 @@ export function EventsPage() {
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
   const [size, setSize] = React.useState(50);
-  const [draftAppName, setDraftAppName] = React.useState("");
-  const [appName, setAppName] = React.useState("");
+  const [draftSearch, setDraftSearch] = React.useState("");
+  const [search, setSearch] = React.useState("");
   const [kind, setKind] = React.useState<InputEventKind | "">("");
   const [sortValue, setSortValue] = React.useState(defaultSort.value);
   const sort = sortOptions.find((option) => option.value === sortValue) ?? defaultSort;
 
   const eventsQuery = useQuery({
-    queryKey: ["input-events", page, size, appName, kind, sort.value],
+    queryKey: ["input-events", page, size, search, kind, sort.value],
     queryFn: () =>
       listInputEvents({
         page,
         size,
-        appName,
+        search,
         kind: kind || undefined,
         sortBy: sort.sortBy,
         sortDirection: sort.sortDirection,
@@ -113,12 +114,12 @@ export function EventsPage() {
   function applyFilters(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(1);
-    setAppName(draftAppName.trim());
+    setSearch(draftSearch.trim());
   }
 
   function clearFilters() {
-    setDraftAppName("");
-    setAppName("");
+    setDraftSearch("");
+    setSearch("");
     setKind("");
     setSortValue(defaultSort.value);
     setPage(1);
@@ -127,17 +128,16 @@ export function EventsPage() {
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="shrink-0 gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle>{t("eventsPage.table.title")}</CardTitle>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <form
-            className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_11rem_auto_auto] lg:w-auto"
+            className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_11rem_11rem_auto_auto]"
             onSubmit={applyFilters}
           >
             <Input
-              aria-label={t("eventsPage.filters.appName")}
-              onChange={(event) => setDraftAppName(event.target.value)}
-              placeholder={t("eventsPage.filters.appNamePlaceholder")}
-              value={draftAppName}
+              aria-label={t("eventsPage.filters.search")}
+              onChange={(event) => setDraftSearch(event.target.value)}
+              placeholder={t("eventsPage.filters.searchPlaceholder")}
+              value={draftSearch}
             />
             <select
               aria-label={t("eventsPage.filters.kind")}
@@ -187,12 +187,8 @@ export function EventsPage() {
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
-                <TableHead className="min-w-36 whitespace-nowrap">
-                  {t("eventsPage.table.time")}
-                </TableHead>
-                <TableHead className="whitespace-nowrap">
-                  {t("eventsPage.table.type")}
-                </TableHead>
+                <TableHead className="min-w-36">{t("eventsPage.table.time")}</TableHead>
+                <TableHead>{t("eventsPage.table.type")}</TableHead>
                 <TableHead>{t("eventsPage.table.value")}</TableHead>
                 <TableHead className="min-w-36">{t("eventsPage.table.app")}</TableHead>
                 <TableHead className="min-w-64">{t("eventsPage.table.window")}</TableHead>
@@ -209,39 +205,51 @@ export function EventsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                events.map((event) => (
-                  <TableRow
-                    className="cursor-pointer"
-                    key={event.id}
-                    onClick={() => navigate(`/events/${event.id}`)}
-                    onKeyDown={(keyboardEvent) => {
-                      if (keyboardEvent.key === "Enter") {
-                        navigate(`/events/${event.id}`);
-                      }
-                    }}
-                    role="link"
-                    tabIndex={0}
-                  >
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatCompactDateTime(event.occurredAt)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <Badge className="whitespace-nowrap" variant="outline">
-                        {t(`events.kind.${event.kind}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-56 truncate font-mono text-xs">
-                      {event.value}
-                    </TableCell>
-                    <TableCell className="font-medium">{event.appName}</TableCell>
-                    <TableCell className="max-w-80 truncate text-muted-foreground">
-                      {event.windowTitle}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {event.collectorName} {event.collectorVersion}
-                    </TableCell>
-                  </TableRow>
-                ))
+                events.map((event) => {
+                  const occurredAt = formatCompactDateTime(event.occurredAt);
+                  const kindLabel = t(`events.kind.${event.kind}`);
+                  const collector = `${event.collectorName} ${event.collectorVersion}`;
+
+                  return (
+                    <TableRow
+                      className="cursor-pointer"
+                      key={event.id}
+                      onClick={() => navigate(`/events/${event.id}`)}
+                      onKeyDown={(keyboardEvent) => {
+                        if (keyboardEvent.key === "Enter") {
+                          navigate(`/events/${event.id}`);
+                        }
+                      }}
+                      role="link"
+                      tabIndex={0}
+                    >
+                      <TableCell className="text-muted-foreground">
+                        <TableCellText tooltip={occurredAt}>{occurredAt}</TableCellText>
+                      </TableCell>
+                      <TableCell>
+                        <TableCellText tooltip={kindLabel}>
+                          <Badge className="whitespace-nowrap" variant="outline">
+                            {kindLabel}
+                          </Badge>
+                        </TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-56 font-mono text-xs">
+                        <TableCellText tooltip={event.value}>{event.value}</TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-48 font-medium">
+                        <TableCellText tooltip={event.appName}>{event.appName}</TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-80 text-muted-foreground">
+                        <TableCellText tooltip={event.windowTitle}>
+                          {event.windowTitle}
+                        </TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-52 text-muted-foreground">
+                        <TableCellText tooltip={collector}>{collector}</TableCellText>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

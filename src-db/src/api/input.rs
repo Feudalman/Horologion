@@ -36,6 +36,8 @@ pub struct InputEventQuery {
     pub end_at: Option<DateTime<Utc>>,
     pub kind: Option<InputEventKind>,
     pub window_id: Option<i64>,
+    /// 通用搜索词；当前用于按关联窗口应用名做模糊搜索。
+    pub search: Option<String>,
     pub app_name: Option<String>,
     pub context_hash: Option<String>,
     /// 排序字段；未传时按事件发生时间排序。
@@ -243,6 +245,11 @@ pub fn query_input_events(
         values.push(Box::new(window_id));
     }
 
+    if let Some(search) = normalized_search(&query.search) {
+        conditions.push("LOWER(w.app_name) LIKE LOWER(?)");
+        values.push(Box::new(format!("%{search}%")));
+    }
+
     if let Some(app_name) = &query.app_name {
         conditions.push("w.app_name = ?");
         values.push(Box::new(app_name.clone()));
@@ -284,6 +291,14 @@ pub fn query_input_events(
     let list = collect_rows(rows)?;
 
     Ok(PaginatedResponse::new(page, size, total, list))
+}
+
+fn normalized_search(search: &Option<String>) -> Option<String> {
+    search
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 /// 将 input 与 window 的 LEFT JOIN 查询结果映射为组合记录。

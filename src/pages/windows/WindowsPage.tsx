@@ -1,6 +1,6 @@
 import * as React from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Hash, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -18,6 +18,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableCellText,
   TableHead,
   TableHeader,
   TableRow,
@@ -80,21 +81,18 @@ export function WindowsPage() {
   const navigate = useNavigate();
   const [page, setPage] = React.useState(1);
   const [size, setSize] = React.useState(50);
-  const [draftAppName, setDraftAppName] = React.useState("");
-  const [draftContextHash, setDraftContextHash] = React.useState("");
-  const [appName, setAppName] = React.useState("");
-  const [contextHash, setContextHash] = React.useState("");
+  const [draftSearch, setDraftSearch] = React.useState("");
+  const [search, setSearch] = React.useState("");
   const [sortValue, setSortValue] = React.useState(defaultSort.value);
   const sort = sortOptions.find((option) => option.value === sortValue) ?? defaultSort;
 
   const windowsQuery = useQuery({
-    queryKey: ["observed-windows", page, size, appName, contextHash, sort.value],
+    queryKey: ["observed-windows", page, size, search, sort.value],
     queryFn: () =>
       listObservedWindows({
         page,
         size,
-        appName,
-        contextHash,
+        search,
         sortBy: sort.sortBy,
         sortDirection: sort.sortDirection,
       }),
@@ -107,15 +105,12 @@ export function WindowsPage() {
   function applyFilters(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPage(1);
-    setAppName(draftAppName.trim());
-    setContextHash(draftContextHash.trim());
+    setSearch(draftSearch.trim());
   }
 
   function clearFilters() {
-    setDraftAppName("");
-    setDraftContextHash("");
-    setAppName("");
-    setContextHash("");
+    setDraftSearch("");
+    setSearch("");
     setSortValue(defaultSort.value);
     setPage(1);
   }
@@ -123,28 +118,17 @@ export function WindowsPage() {
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="shrink-0 gap-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <CardTitle>{t("windowsPage.table.title")}</CardTitle>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <form
-            className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_11rem_auto_auto]"
+            className="grid w-full gap-2 md:grid-cols-[minmax(0,1fr)_11rem_auto_auto]"
             onSubmit={applyFilters}
           >
             <Input
-              aria-label={t("windowsPage.filters.appName")}
-              onChange={(event) => setDraftAppName(event.target.value)}
-              placeholder={t("windowsPage.filters.appNamePlaceholder")}
-              value={draftAppName}
+              aria-label={t("windowsPage.filters.search")}
+              onChange={(event) => setDraftSearch(event.target.value)}
+              placeholder={t("windowsPage.filters.searchPlaceholder")}
+              value={draftSearch}
             />
-            <div className="relative">
-              <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                aria-label={t("windowsPage.filters.contextHash")}
-                className="pl-9"
-                onChange={(event) => setDraftContextHash(event.target.value)}
-                placeholder={t("windowsPage.filters.contextHashPlaceholder")}
-                value={draftContextHash}
-              />
-            </div>
             <select
               aria-label={t("windowsPage.filters.sort")}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -182,12 +166,8 @@ export function WindowsPage() {
                 <TableHead>{t("windowsPage.table.eventCount")}</TableHead>
                 <TableHead>{t("windowsPage.table.processId")}</TableHead>
                 <TableHead>{t("windowsPage.table.size")}</TableHead>
-                <TableHead className="min-w-36 whitespace-nowrap">
-                  {t("windowsPage.table.firstSeen")}
-                </TableHead>
-                <TableHead className="min-w-36 whitespace-nowrap">
-                  {t("windowsPage.table.lastSeen")}
-                </TableHead>
+                <TableHead className="min-w-36">{t("windowsPage.table.firstSeen")}</TableHead>
+                <TableHead className="min-w-36">{t("windowsPage.table.lastSeen")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -200,38 +180,50 @@ export function WindowsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                windows.map((window) => (
-                  <TableRow
-                    className="cursor-pointer"
-                    key={window.id}
-                    onClick={() => navigate(`/windows/${window.id}`)}
-                    onKeyDown={(keyboardEvent) => {
-                      if (keyboardEvent.key === "Enter") {
-                        navigate(`/windows/${window.id}`);
-                      }
-                    }}
-                    role="link"
-                    tabIndex={0}
-                  >
-                    <TableCell className="font-medium">{window.appName}</TableCell>
-                    <TableCell className="max-w-96 truncate text-muted-foreground">
-                      {window.title}
-                    </TableCell>
-                    <TableCell>{window.eventCount.toLocaleString(i18n.language)}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {window.processId ?? "-"}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatWindowSize(window.width, window.height)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatCompactDateTime(window.firstSeenAt)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {formatCompactDateTime(window.lastSeenAt)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                windows.map((window) => {
+                  const eventCount = window.eventCount.toLocaleString(i18n.language);
+                  const processId = window.processId === null ? "-" : String(window.processId);
+                  const sizeLabel = formatWindowSize(window.width, window.height);
+                  const firstSeenAt = formatCompactDateTime(window.firstSeenAt);
+                  const lastSeenAt = formatCompactDateTime(window.lastSeenAt);
+
+                  return (
+                    <TableRow
+                      className="cursor-pointer"
+                      key={window.id}
+                      onClick={() => navigate(`/windows/${window.id}`)}
+                      onKeyDown={(keyboardEvent) => {
+                        if (keyboardEvent.key === "Enter") {
+                          navigate(`/windows/${window.id}`);
+                        }
+                      }}
+                      role="link"
+                      tabIndex={0}
+                    >
+                      <TableCell className="max-w-48 font-medium">
+                        <TableCellText tooltip={window.appName}>{window.appName}</TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-96 text-muted-foreground">
+                        <TableCellText tooltip={window.title}>{window.title}</TableCellText>
+                      </TableCell>
+                      <TableCell>
+                        <TableCellText tooltip={eventCount}>{eventCount}</TableCellText>
+                      </TableCell>
+                      <TableCell className="max-w-28 text-muted-foreground">
+                        <TableCellText tooltip={processId}>{processId}</TableCellText>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <TableCellText tooltip={sizeLabel}>{sizeLabel}</TableCellText>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <TableCellText tooltip={firstSeenAt}>{firstSeenAt}</TableCellText>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <TableCellText tooltip={lastSeenAt}>{lastSeenAt}</TableCellText>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

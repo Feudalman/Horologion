@@ -212,6 +212,53 @@ mod tests {
     }
 
     #[test]
+    fn query_input_events_can_search_app_name() {
+        let conn = setup();
+        insert_input_event(&conn, &event("KeyA", Some(window("cargo test")))).unwrap();
+        let mut browser_window = window("docs");
+        browser_window.app_name = "Safari".to_string();
+        insert_input_event(&conn, &event("KeyB", Some(browser_window))).unwrap();
+
+        let records = query_input_events(
+            &conn,
+            &InputEventQuery {
+                search: Some("term".to_string()),
+                size: Some(10),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(records.total, 1);
+        assert_eq!(
+            records.list[0].window.as_ref().unwrap().app_name,
+            "Terminal"
+        );
+    }
+
+    #[test]
+    fn query_observed_windows_can_search_app_name() {
+        let conn = setup();
+        insert_input_event(&conn, &event("KeyA", Some(window("cargo test")))).unwrap();
+        let mut browser_window = window("docs");
+        browser_window.app_name = "Safari".to_string();
+        insert_input_event(&conn, &event("KeyB", Some(browser_window))).unwrap();
+
+        let records = query_observed_windows(
+            &conn,
+            &ObservedWindowQuery {
+                search: Some("fari".to_string()),
+                size: Some(10),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(records.total, 1);
+        assert_eq!(records.list[0].app_name, "Safari");
+    }
+
+    #[test]
     fn query_observed_windows_supports_page_size() {
         let conn = setup();
         insert_input_event(&conn, &event("KeyA", Some(window("cargo test")))).unwrap();

@@ -69,7 +69,7 @@ export type InputEventQuery = {
   page?: number;
   size?: number;
   kind?: InputEventKind;
-  appName?: string;
+  search?: string;
   sortBy?: InputEventSortBy;
   sortDirection?: SortDirection;
   windowId?: number;
@@ -105,8 +105,7 @@ export type ObservedWindowSortBy =
 export type ObservedWindowQuery = {
   page?: number;
   size?: number;
-  appName?: string;
-  contextHash?: string;
+  search?: string;
   sortBy?: ObservedWindowSortBy;
   sortDirection?: SortDirection;
 };
@@ -306,7 +305,7 @@ export async function listInputEvents(query: InputEventQuery = {}) {
         page: query.page,
         size: query.size,
         kind: query.kind,
-        app_name: emptyToUndefined(query.appName),
+        search: emptyToUndefined(query.search),
         window_id: query.windowId,
         sort_by: query.sortBy,
         sort_direction: query.sortDirection,
@@ -335,8 +334,7 @@ export async function listObservedWindows(query: ObservedWindowQuery = {}) {
       query: {
         page: query.page,
         size: query.size,
-        app_name: emptyToUndefined(query.appName),
-        context_hash: emptyToUndefined(query.contextHash),
+        search: emptyToUndefined(query.search),
         sort_by: query.sortBy,
         sort_direction: query.sortDirection,
       },

@@ -69,14 +69,20 @@ const pageTitles: Record<string, { titleKey: string }> = {
   },
 };
 
+const SIDEBAR_COLLAPSED_KEY = "horologion-sidebar-collapsed";
+
 export function AppShell() {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(readSavedSidebarCollapsed);
   const location = useLocation();
   const page = getPageTitle(location.pathname);
   const isTablePage =
     location.pathname === "/events" || location.pathname === "/windows";
   const historyControls = useBrowserHistoryControls();
+
+  React.useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "true" : "false");
+  }, [collapsed]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -221,6 +227,10 @@ export function AppShell() {
       </div>
     </div>
   );
+}
+
+function readSavedSidebarCollapsed() {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
 }
 
 function getPageTitle(pathname: string) {

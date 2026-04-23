@@ -4,12 +4,10 @@ export const windowsI18n = {
   "zh-CN": {
     windowsPage: {
       filters: {
-        appName: "应用名",
-        appNamePlaceholder: "精确匹配应用名",
-        apply: "应用筛选",
+        apply: "搜索",
         clear: "清空",
-        contextHash: "上下文 Hash",
-        contextHashPlaceholder: "精确匹配 context_hash",
+        search: "搜索应用名",
+        searchPlaceholder: "搜索应用名",
         sort: "排序",
       },
       sort: {
@@ -26,7 +24,6 @@ export const windowsI18n = {
         lastSeen: "最近出现",
         processId: "进程 ID",
         size: "尺寸",
-        title: "窗口上下文",
         window: "窗口",
       },
       detail: {
@@ -44,12 +41,10 @@ export const windowsI18n = {
   "en-US": {
     windowsPage: {
       filters: {
-        appName: "App name",
-        appNamePlaceholder: "Exact app name",
-        apply: "Apply filters",
+        apply: "Search",
         clear: "Clear",
-        contextHash: "Context hash",
-        contextHashPlaceholder: "Exact context_hash",
+        search: "Search app name",
+        searchPlaceholder: "Search app name",
         sort: "Sort",
       },
       sort: {
@@ -66,7 +61,6 @@ export const windowsI18n = {
         lastSeen: "Last seen",
         processId: "PID",
         size: "Size",
-        title: "Window contexts",
         window: "Window",
       },
       detail: {
