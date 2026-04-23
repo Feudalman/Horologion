@@ -1,3 +1,4 @@
+use crate::permissions;
 use crate::window::{get_current_window_info, WindowInfo};
 use chrono::{DateTime, Local, Utc};
 use database::{
@@ -47,6 +48,8 @@ impl ListenerTransport {
 impl EventListener {
     /// 创建新的事件监听器
     pub fn new() -> Result<Self, String> {
+        permissions::request_required_permissions();
+
         let transport = ListenerTransport::from_env();
         let db = if transport == ListenerTransport::Database {
             let db = DatabaseManager::from_env().map_err(|error| error.to_string())?;

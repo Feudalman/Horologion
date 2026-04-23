@@ -1,4 +1,5 @@
 mod monitor;
+mod permissions;
 mod window;
 
 use monitor::EventListener;
