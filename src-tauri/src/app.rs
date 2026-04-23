@@ -3,13 +3,24 @@ use database::{api::insert_input_event, db::DatabaseManager, models::InputEvent}
 use log::warn;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
-use tauri::{AppHandle, Manager, PhysicalSize, Runtime, Size, WindowEvent};
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::{
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Manager, PhysicalSize, Runtime, Size, WindowEvent,
+};
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
 
 const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
 const WINDOW_STATE_FILE: &str = "window-state.json";
+const TRAY_ID: &str = "horologion-tray";
+const TRAY_SHOW_ID: &str = "tray-show-window";
+const TRAY_START_LISTENER_ID: &str = "tray-start-listener";
+const TRAY_STOP_LISTENER_ID: &str = "tray-stop-listener";
+const TRAY_QUIT_ID: &str = "tray-quit";
+
+static ALLOW_APP_EXIT: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 struct SavedWindowSize {
@@ -38,10 +49,11 @@ pub fn init_and_run() {
         .invoke_handler(server::router::handler())
         .setup(|app| {
             restore_main_window_size(app);
-            watch_main_window_size(app);
+            watch_main_window_lifecycle(app);
 
             let state = app.state::<server::ServerState>();
             start_listener_sidecar(app.handle(), &state)?;
+            setup_tray(app)?;
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -163,14 +175,117 @@ fn restore_main_window_size(app: &tauri::App) {
     }
 }
 
-fn watch_main_window_size(app: &tauri::App) {
+fn setup_tray(app: &tauri::App) -> Result<(), String> {
+    let show = MenuItem::with_id(app, TRAY_SHOW_ID, "显示 Horologion", true, None::<&str>)
+        .map_err(|error| error.to_string())?;
+    let start_listener =
+        MenuItem::with_id(app, TRAY_START_LISTENER_ID, "启动监听", true, None::<&str>)
+            .map_err(|error| error.to_string())?;
+    let stop_listener =
+        MenuItem::with_id(app, TRAY_STOP_LISTENER_ID, "停止监听", true, None::<&str>)
+            .map_err(|error| error.to_string())?;
+    let separator = PredefinedMenuItem::separator(app).map_err(|error| error.to_string())?;
+    let quit = MenuItem::with_id(app, TRAY_QUIT_ID, "退出 Horologion", true, None::<&str>)
+        .map_err(|error| error.to_string())?;
+    let menu = Menu::with_items(
+        app,
+        &[&show, &start_listener, &stop_listener, &separator, &quit],
+    )
+    .map_err(|error| error.to_string())?;
+
+    let mut builder = TrayIconBuilder::with_id(TRAY_ID)
+        .tooltip("Horologion")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app_handle, event| {
+            handle_tray_menu_event(app_handle, event.id().as_ref());
+        })
+        .on_tray_icon_event(|tray, event| {
+            if should_show_window_from_tray_event(&event) {
+                show_main_window(tray.app_handle());
+            }
+        });
+
+    if let Some(icon) = app.default_window_icon().cloned() {
+        builder = builder.icon(icon);
+    }
+
+    builder.build(app).map_err(|error| error.to_string())?;
+
+    Ok(())
+}
+
+fn handle_tray_menu_event<R: Runtime>(app_handle: &AppHandle<R>, id: &str) {
+    let state = app_handle.state::<server::ServerState>();
+
+    match id {
+        TRAY_SHOW_ID => show_main_window(app_handle),
+        TRAY_START_LISTENER_ID => {
+            if let Err(error) = start_listener_sidecar(app_handle, &state) {
+                warn!("Failed to start listener from tray: {}", error);
+            }
+        }
+        TRAY_STOP_LISTENER_ID => {
+            if let Err(error) = stop_listener_sidecar(&state) {
+                warn!("Failed to stop listener from tray: {}", error);
+            }
+        }
+        TRAY_QUIT_ID => quit_from_tray(app_handle, &state),
+        _ => {}
+    }
+}
+
+fn should_show_window_from_tray_event(event: &TrayIconEvent) -> bool {
+    matches!(
+        event,
+        TrayIconEvent::Click {
+            button: MouseButton::Left,
+            button_state: MouseButtonState::Up,
+            ..
+        } | TrayIconEvent::DoubleClick {
+            button: MouseButton::Left,
+            ..
+        }
+    )
+}
+
+fn show_main_window<R: Runtime>(app_handle: &AppHandle<R>) {
+    let Some(window) = app_handle.get_webview_window("main") else {
+        return;
+    };
+
+    if let Err(error) = window.show() {
+        warn!("Failed to show main window: {}", error);
+    }
+
+    if let Err(error) = window.unminimize() {
+        warn!("Failed to unminimize main window: {}", error);
+    }
+
+    if let Err(error) = window.set_focus() {
+        warn!("Failed to focus main window: {}", error);
+    }
+}
+
+fn quit_from_tray<R: Runtime>(app_handle: &AppHandle<R>, state: &server::ServerState) {
+    ALLOW_APP_EXIT.store(true, Ordering::SeqCst);
+
+    if let Err(error) = stop_listener_sidecar(state) {
+        warn!("Failed to stop listener before quitting: {}", error);
+    }
+
+    app_handle.exit(0);
+}
+
+fn watch_main_window_lifecycle(app: &tauri::App) {
     let Some(window) = app.get_webview_window("main") else {
         return;
     };
+    let main_window = window.clone();
     let path = window_state_path(app.handle());
 
-    window.on_window_event(move |event| {
-        if let WindowEvent::Resized(size) = event {
+    window.on_window_event(move |event| match event {
+        WindowEvent::Resized(size) => {
             if size.width < 400 || size.height < 300 {
                 return;
             }
@@ -184,6 +299,18 @@ fn watch_main_window_size(app: &tauri::App) {
                 warn!("Failed to persist window size: {}", error);
             }
         }
+        WindowEvent::CloseRequested { api, .. } => {
+            if ALLOW_APP_EXIT.load(Ordering::SeqCst) {
+                return;
+            }
+
+            api.prevent_close();
+
+            if let Err(error) = main_window.hide() {
+                warn!("Failed to hide main window to tray: {}", error);
+            }
+        }
+        _ => {}
     });
 }
 
