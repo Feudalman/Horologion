@@ -50,10 +50,10 @@ pub fn init_and_run() {
         .setup(|app| {
             restore_main_window_size(app);
             watch_main_window_lifecycle(app);
+            setup_tray(app)?;
 
             let state = app.state::<server::ServerState>();
             start_listener_sidecar(app.handle(), &state)?;
-            setup_tray(app)?;
             Ok(())
         })
         .build(tauri::generate_context!())
