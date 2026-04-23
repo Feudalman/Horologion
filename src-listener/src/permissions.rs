@@ -44,9 +44,21 @@ mod platform {
     }
 
     fn request_accessibility_access() -> bool {
+        if is_accessibility_trusted(false) {
+            return true;
+        }
+
+        is_accessibility_trusted(true)
+    }
+
+    fn is_accessibility_trusted(prompt: bool) -> bool {
         unsafe {
             let prompt_key = CFString::wrap_under_get_rule(kAXTrustedCheckOptionPrompt);
-            let prompt_value = CFBoolean::true_value();
+            let prompt_value = if prompt {
+                CFBoolean::true_value()
+            } else {
+                CFBoolean::false_value()
+            };
             let options = CFDictionary::from_CFType_pairs(&[(prompt_key, prompt_value)]);
 
             AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef()) != 0

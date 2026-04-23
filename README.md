@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="Horologion logo" width="120" style="border-radius: 24px;" />
+</p>
+
 # Horologion
 
 Horologion 是一个仍处于起步阶段的本地活动时间线工具。当前版本已经完成了最基础的采集、存储和查看能力，但还不是一个成熟稳定的生产级应用：错误处理、日志记录、数据库轮转、数据库清理和备份能力都还没有完善，请谨慎用于生产实践。
