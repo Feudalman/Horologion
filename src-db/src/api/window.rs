@@ -24,6 +24,8 @@ pub struct ObservedWindowQuery {
     pub size: Option<i64>,
     /// 零基 offset 游标；传入后优先于 page 决定查询起点。
     pub cursor: Option<i64>,
+    /// 通用搜索词；当前用于按应用名做模糊搜索。
+    pub search: Option<String>,
     pub app_name: Option<String>,
     pub context_hash: Option<String>,
     /// 排序字段；未传时按最近观察时间排序。
@@ -172,6 +174,11 @@ pub fn query_observed_windows(
     let mut conditions = Vec::new();
     let mut values: Vec<Box<dyn ToSql>> = Vec::new();
 
+    if let Some(search) = normalized_search(&query.search) {
+        conditions.push("LOWER(app_name) LIKE LOWER(?)");
+        values.push(Box::new(format!("%{search}%")));
+    }
+
     if let Some(app_name) = &query.app_name {
         conditions.push("app_name = ?");
         values.push(Box::new(app_name.clone()));
@@ -213,6 +220,14 @@ pub fn query_observed_windows(
     let list = collect_rows(rows)?;
 
     Ok(PaginatedResponse::new(page, size, total, list))
+}
+
+fn normalized_search(search: &Option<String>) -> Option<String> {
+    search
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 /// 按窗口上下文 hash 复用或创建窗口记录。

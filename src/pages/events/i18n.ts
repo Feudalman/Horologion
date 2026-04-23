@@ -4,11 +4,11 @@ export const eventsI18n = {
   "zh-CN": {
     eventsPage: {
       filters: {
-        appName: "应用名",
-        appNamePlaceholder: "精确匹配应用名",
-        apply: "应用筛选",
+        apply: "搜索",
         clear: "清空",
         kind: "事件类型",
+        search: "搜索应用名",
+        searchPlaceholder: "搜索应用名",
         sort: "排序",
       },
       kind: {
@@ -26,7 +26,6 @@ export const eventsI18n = {
         collector: "采集器",
         empty: "暂无事件记录",
         time: "时间",
-        title: "输入事件",
         type: "类型",
         value: "值",
         window: "窗口",
@@ -54,11 +53,11 @@ export const eventsI18n = {
   "en-US": {
     eventsPage: {
       filters: {
-        appName: "App name",
-        appNamePlaceholder: "Exact app name",
-        apply: "Apply filters",
+        apply: "Search",
         clear: "Clear",
         kind: "Event type",
+        search: "Search app name",
+        searchPlaceholder: "Search app name",
         sort: "Sort",
       },
       kind: {
@@ -76,7 +75,6 @@ export const eventsI18n = {
         collector: "Collector",
         empty: "No input events",
         time: "Time",
-        title: "Input events",
         type: "Type",
         value: "Value",
         window: "Window",
