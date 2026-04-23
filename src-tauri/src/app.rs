@@ -42,7 +42,7 @@ pub fn init_and_run() {
         std::process::exit(1);
     });
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(server_state)
@@ -56,8 +56,14 @@ pub fn init_and_run() {
             setup_tray(app)?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Reopen { .. } = event {
+            show_main_window(app_handle);
+        }
+    });
 }
 
 pub fn start_listener_sidecar<R: Runtime>(
