@@ -94,7 +94,10 @@ mod platform {
 
         if let Some(parent) = path.parent() {
             if let Err(error) = fs::create_dir_all(parent) {
-                warn!("Failed to create permission prompt marker directory: {}", error);
+                warn!(
+                    "Failed to create permission prompt marker directory: {}",
+                    error
+                );
                 return;
             }
         }
