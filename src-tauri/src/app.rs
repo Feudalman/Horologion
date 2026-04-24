@@ -45,6 +45,9 @@ pub fn init_and_run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_main_window(app);
+        }))
         .manage(server_state)
         .invoke_handler(server::router::handler())
         .setup(|app| {
