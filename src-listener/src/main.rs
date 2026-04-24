@@ -3,12 +3,13 @@ mod permissions;
 mod window;
 
 use database::db::{path::find_project_root, RunMode};
-use log::LevelFilter;
+use flexi_logger::{Age, Cleanup, Criterion, Duplicate, FileSpec, Logger, Naming};
 use monitor::EventListener;
-use std::fs::OpenOptions;
 use std::path::PathBuf;
 
-const LISTENER_LOG_FILE: &str = "listener.log";
+const LISTENER_LOG_BASENAME: &str = "listener";
+const LOG_ROTATE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
+const LOG_RETENTION_DAYS: usize = 30;
 
 /// 键鼠监听器入口
 fn main() {
@@ -33,104 +34,71 @@ fn main() {
 }
 
 fn init_log() {
-    let log_level = default_log_level();
-    let log_file_path = match log_file_path(LISTENER_LOG_FILE) {
+    let log_spec = default_log_spec();
+    let log_directory = match log_directory() {
         Ok(path) => path,
         Err(error) => {
-            eprintln!("Failed to resolve listener log path: {}", error);
-            init_fallback_logger(log_level);
+            eprintln!("Failed to resolve listener log directory: {}", error);
+            init_fallback_logger(&log_spec);
             return;
         }
     };
 
-    if let Some(parent) = log_file_path.parent() {
-        if let Err(error) = std::fs::create_dir_all(parent) {
-            eprintln!("Failed to create listener log directory: {}", error);
-            init_fallback_logger(log_level);
-            return;
-        }
-    }
-
-    let log_file = match OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_file_path)
-    {
-        Ok(file) => file,
-        Err(error) => {
-            eprintln!(
-                "Failed to open listener log file {:?}: {}",
-                log_file_path, error
-            );
-            init_fallback_logger(log_level);
-            return;
-        }
-    };
-
-    let logger = fern::Dispatch::new()
-        .level(log_level)
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{} [{}] {}",
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level(),
-                message
-            ))
-        })
-        .chain(std::io::stderr())
-        .chain(log_file);
-
-    if let Err(error) = logger.apply() {
-        eprintln!("Failed to initialize listener logger: {}", error);
-        init_fallback_logger(log_level);
+    if let Err(error) = std::fs::create_dir_all(&log_directory) {
+        eprintln!("Failed to create listener log directory: {}", error);
+        init_fallback_logger(&log_spec);
         return;
     }
 
-    log::info!("Listener log file: {}", log_file_path.display());
+    let logger = Logger::try_with_str(&log_spec)
+        .map(|logger| {
+            logger
+                .log_to_file(
+                    FileSpec::default()
+                        .directory(log_directory.clone())
+                        .basename(LISTENER_LOG_BASENAME)
+                        .suffix("log"),
+                )
+                .duplicate_to_stderr(Duplicate::All)
+                .rotate(
+                    Criterion::AgeOrSize(Age::Day, LOG_ROTATE_SIZE_BYTES),
+                    Naming::Timestamps,
+                    Cleanup::KeepForDays(LOG_RETENTION_DAYS),
+                )
+                .append()
+        })
+        .and_then(|logger| logger.start());
+
+    if let Err(error) = logger {
+        eprintln!("Failed to initialize listener logger: {}", error);
+        init_fallback_logger(&log_spec);
+        return;
+    }
+
+    log::info!(
+        "Listener logs directory: {} (daily rotation, {} bytes max per file, retain {} days)",
+        log_directory.display(),
+        LOG_ROTATE_SIZE_BYTES,
+        LOG_RETENTION_DAYS
+    );
 }
 
-fn default_log_level() -> LevelFilter {
+fn default_log_spec() -> String {
     if std::env::var("RUST_LOG").is_err() {
         let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
         std::env::set_var("RUST_LOG", &log_level);
     }
 
-    parse_log_level(
-        &std::env::var("LOG_LEVEL")
-            .or_else(|_| std::env::var("RUST_LOG"))
-            .unwrap_or_else(|_| "info".to_string()),
-    )
+    std::env::var("RUST_LOG")
+        .or_else(|_| std::env::var("LOG_LEVEL"))
+        .unwrap_or_else(|_| "info".to_string())
 }
 
-fn parse_log_level(value: &str) -> LevelFilter {
-    let normalized = value
-        .split(',')
-        .next()
-        .unwrap_or("info")
-        .split('=')
-        .next_back()
-        .unwrap_or("info")
-        .trim()
-        .to_ascii_lowercase();
-
-    match normalized.as_str() {
-        "off" => LevelFilter::Off,
-        "error" => LevelFilter::Error,
-        "warn" | "warning" => LevelFilter::Warn,
-        "debug" => LevelFilter::Debug,
-        "trace" => LevelFilter::Trace,
-        _ => LevelFilter::Info,
-    }
+fn init_fallback_logger(log_spec: &str) {
+    let _ = Logger::try_with_str(log_spec).and_then(|logger| logger.log_to_stderr().start());
 }
 
-fn init_fallback_logger(level: LevelFilter) {
-    let _ = fern::Dispatch::new()
-        .level(level)
-        .chain(std::io::stderr())
-        .apply();
-}
-
-fn log_file_path(file_name: &str) -> Result<PathBuf, String> {
+fn log_directory() -> Result<PathBuf, String> {
     let log_dir = match RunMode::from_env() {
         RunMode::Test => std::env::temp_dir().join("horologion").join("logs"),
         RunMode::Development => find_project_root()
@@ -143,5 +111,5 @@ fn log_file_path(file_name: &str) -> Result<PathBuf, String> {
             .join("logs"),
     };
 
-    Ok(log_dir.join(file_name))
+    Ok(log_dir)
 }
