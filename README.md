@@ -15,6 +15,7 @@ Before running it for the first time, please pay special attention to the follow
 - If the database file becomes too large, you need to manually delete, move, or back it up. Deleting the database file will remove the collected data.
 - Configuration-file-driven behavior is still experimental. The interface and format may change in later versions. At this stage, the project mainly supports the default log output level and the default local database path. More configuration options will be improved in future releases.
 - This project collects local interaction data and the open-source version does not sync data to the cloud by default. Do not accidentally commit or share database files that contain personal activity records.
+- On macOS, please verify the required permissions before launching the packaged app. Horologion currently relies on Accessibility, Input Monitoring, and Screen Recording permissions. If these permissions are changed after installation or after rebuilding the app, macOS may treat the new build as a different app identity. If listening still does not work after granting permissions, quit Horologion completely and launch it again.
 
 ## Overview
 
@@ -96,7 +97,19 @@ Recommended environment:
 - Node.js and pnpm
 - Rust stable
 - System dependencies required by Tauri 2
-- On macOS, input monitoring and accessibility permissions are required, otherwise input collection or window title collection may not work
+- On macOS, Accessibility, Input Monitoring, and Screen Recording permissions are required. Please check these permissions before startup. If you finish changing permissions and Horologion still cannot listen correctly, quit the app completely and restart it
+
+## macOS Permissions
+
+If you use Horologion on macOS, please check the following permissions before startup:
+
+- Accessibility
+- Input Monitoring
+- Screen Recording
+
+These permissions affect global keyboard and mouse listening, window title collection, and other active-window related behavior. If you rebuild or reinstall the app, macOS may consider the new binary a different app identity, and previously granted permissions may not carry over.
+
+After changing permissions, if Horologion still cannot listen correctly, fully quit the app and then launch it again.
 
 Install dependencies:
 
