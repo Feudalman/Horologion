@@ -19,6 +19,10 @@ Before running it for the first time, please pay special attention to the follow
 
 ## Overview
 
+<p align="center">
+  <img src="example.png" alt="Horologion Example" style="border-radius: 8px;" />
+</p>
+
 Horologion aims to become a cross-platform local activity recording and observation tool. It listens for basic input events in the background, writes those events together with the active window context to a local database, and displays them in a desktop app as a searchable, paginated, and aggregatable timeline.
 
 You can think of it as an activity foundation for personal research and local automation experiments. It does not try to judge what you are doing. It first focuses on reliably preserving what input event happened, when it happened, and which foreground window was active at that moment. Future versions can build on this foundation to support statistics, automatic archiving, activity replay, time accounting, or more detailed personal workflow tools.
