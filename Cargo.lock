@@ -840,6 +840,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.0.1"
+
+[[package]]
 name = "const-random"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1115,6 +1119,7 @@ name = "database"
 version = "0.0.1"
 dependencies = [
  "chrono",
+ "config",
  "dirs 5.0.1",
  "duckdb",
  "log",
@@ -2074,6 +2079,7 @@ name = "horologion"
 version = "0.0.1"
 dependencies = [
  "chrono",
+ "config",
  "database",
  "dirs 5.0.1",
  "dotenvy",
@@ -2710,6 +2716,7 @@ version = "0.0.1"
 dependencies = [
  "active-win-pos-rs",
  "chrono",
+ "config",
  "core-foundation 0.9.4",
  "core-foundation-sys 0.8.7",
  "database",

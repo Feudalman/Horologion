@@ -6,6 +6,7 @@
 
 use crate::server::ServerState;
 use chrono::{DateTime, Utc};
+use config::overview;
 use database::{
     api::{
         get_input_event as api_get_input_event, query_input_events, InputEventQuery,
@@ -16,8 +17,6 @@ use database::{
 use duckdb::{params_from_iter, Connection, ToSql};
 use serde::{Deserialize, Serialize};
 use tauri::State;
-
-const TOP_APPS_LIMIT: i64 = 10;
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ActivitySummaryQuery {
@@ -168,8 +167,9 @@ fn query_top_apps(
         {where_sql}
         GROUP BY COALESCE(w.app_name, 'Unknown')
         ORDER BY event_count DESC, app_name ASC
-        LIMIT {TOP_APPS_LIMIT}
-        "#
+        LIMIT {}
+        "#,
+        overview::TOP_APPS_LIMIT
     );
 
     let mut stmt = conn.prepare(&sql)?;

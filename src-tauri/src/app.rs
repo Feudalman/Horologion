@@ -1,4 +1,5 @@
 use crate::server;
+use config::{app as app_config, env, listener, logging, paths, protocol, tauri as tauri_config};
 use database::db::{path::find_project_root, RunMode};
 use database::{api::insert_input_event, db::DatabaseManager, models::InputEvent};
 use flexi_logger::{Age, Cleanup, Criterion, Duplicate, FileSpec, Logger, Naming};
@@ -13,17 +14,6 @@ use tauri::{
 };
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
-
-const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
-const WINDOW_STATE_FILE: &str = "window-state.json";
-const TRAY_ID: &str = "horologion-tray";
-const TRAY_SHOW_ID: &str = "tray-show-window";
-const TRAY_START_LISTENER_ID: &str = "tray-start-listener";
-const TRAY_STOP_LISTENER_ID: &str = "tray-stop-listener";
-const TRAY_QUIT_ID: &str = "tray-quit";
-const APP_LOG_BASENAME: &str = "app";
-const LOG_ROTATE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
-const LOG_RETENTION_DAYS: usize = 30;
 
 static ALLOW_APP_EXIT: AtomicBool = AtomicBool::new(false);
 
@@ -84,9 +74,9 @@ pub fn start_listener_sidecar<R: Runtime>(
 
     let sidecar_command = app_handle
         .shell()
-        .sidecar("listener")
+        .sidecar(listener::BINARY_NAME)
         .map_err(|error| error.to_string())?
-        .env("HOROLOGION_LISTENER_TRANSPORT", "stdio");
+        .env(env::LISTENER_TRANSPORT, protocol::LISTENER_TRANSPORT_STDIO);
     let (mut rx, child) = sidecar_command.spawn().map_err(|error| error.to_string())?;
 
     // 保存 child 句柄并记录运行状态，否则 setup 返回后 sidecar 可能失去生命周期管理。
@@ -143,7 +133,7 @@ fn save_listener_event(db: &DatabaseManager, payload: &str) {
         return;
     }
 
-    let Some(payload) = payload.strip_prefix(STDIO_EVENT_PREFIX) else {
+    let Some(payload) = payload.strip_prefix(protocol::LISTENER_STDIO_EVENT_PREFIX) else {
         return;
     };
 
@@ -185,14 +175,14 @@ pub fn init_log() {
                 .log_to_file(
                     FileSpec::default()
                         .directory(log_directory.clone())
-                        .basename(APP_LOG_BASENAME)
+                        .basename(logging::APP_BASENAME)
                         .suffix("log"),
                 )
                 .duplicate_to_stderr(Duplicate::All)
                 .rotate(
-                    Criterion::AgeOrSize(Age::Day, LOG_ROTATE_SIZE_BYTES),
+                    Criterion::AgeOrSize(Age::Day, logging::ROTATE_SIZE_BYTES),
                     Naming::Timestamps,
-                    Cleanup::KeepForDays(LOG_RETENTION_DAYS),
+                    Cleanup::KeepForDays(logging::RETENTION_DAYS),
                 )
                 .append()
         })
@@ -207,19 +197,19 @@ pub fn init_log() {
     log::info!(
         "App logs directory: {} (daily rotation, {} bytes max per file, retain {} days)",
         log_directory.display(),
-        LOG_ROTATE_SIZE_BYTES,
-        LOG_RETENTION_DAYS
+        logging::ROTATE_SIZE_BYTES,
+        logging::RETENTION_DAYS
     );
 }
 
 fn default_log_spec() -> String {
-    if std::env::var("RUST_LOG").is_err() {
-        let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
-        std::env::set_var("RUST_LOG", &log_level);
+    if std::env::var(env::RUST_LOG).is_err() {
+        let log_level = std::env::var(env::LOG_LEVEL).unwrap_or_else(|_| "info".to_string());
+        std::env::set_var(env::RUST_LOG, &log_level);
     }
 
-    std::env::var("RUST_LOG")
-        .or_else(|_| std::env::var("LOG_LEVEL"))
+    std::env::var(env::RUST_LOG)
+        .or_else(|_| std::env::var(env::LOG_LEVEL))
         .unwrap_or_else(|_| "info".to_string())
 }
 
@@ -229,22 +219,24 @@ fn init_fallback_logger(log_spec: &str) {
 
 fn log_directory() -> Result<PathBuf, String> {
     let log_dir = match RunMode::from_env() {
-        RunMode::Test => std::env::temp_dir().join("horologion").join("logs"),
+        RunMode::Test => std::env::temp_dir()
+            .join(app_config::NAME)
+            .join(logging::DIRECTORY_NAME),
         RunMode::Development => find_project_root()
             .map_err(|error| error.to_string())?
-            .join("playground")
-            .join("logs"),
+            .join(paths::PLAYGROUND_DIR)
+            .join(logging::DIRECTORY_NAME),
         RunMode::Production => dirs::data_dir()
             .ok_or_else(|| "Failed to resolve system data directory".to_string())?
-            .join("horologion")
-            .join("logs"),
+            .join(app_config::NAME)
+            .join(logging::DIRECTORY_NAME),
     };
 
     Ok(log_dir)
 }
 
 fn restore_main_window_size(app: &tauri::App) {
-    let Some(window) = app.get_webview_window("main") else {
+    let Some(window) = app.get_webview_window(tauri_config::MAIN_WINDOW_LABEL) else {
         return;
     };
 
@@ -261,25 +253,47 @@ fn restore_main_window_size(app: &tauri::App) {
 }
 
 fn setup_tray(app: &tauri::App) -> Result<(), String> {
-    let show = MenuItem::with_id(app, TRAY_SHOW_ID, "显示 Horologion", true, None::<&str>)
-        .map_err(|error| error.to_string())?;
-    let start_listener =
-        MenuItem::with_id(app, TRAY_START_LISTENER_ID, "启动监听", true, None::<&str>)
-            .map_err(|error| error.to_string())?;
-    let stop_listener =
-        MenuItem::with_id(app, TRAY_STOP_LISTENER_ID, "停止监听", true, None::<&str>)
-            .map_err(|error| error.to_string())?;
+    let show = MenuItem::with_id(
+        app,
+        tauri_config::tray::SHOW_ID,
+        "显示 Horologion",
+        true,
+        None::<&str>,
+    )
+    .map_err(|error| error.to_string())?;
+    let start_listener = MenuItem::with_id(
+        app,
+        tauri_config::tray::START_LISTENER_ID,
+        "启动监听",
+        true,
+        None::<&str>,
+    )
+    .map_err(|error| error.to_string())?;
+    let stop_listener = MenuItem::with_id(
+        app,
+        tauri_config::tray::STOP_LISTENER_ID,
+        "停止监听",
+        true,
+        None::<&str>,
+    )
+    .map_err(|error| error.to_string())?;
     let separator = PredefinedMenuItem::separator(app).map_err(|error| error.to_string())?;
-    let quit = MenuItem::with_id(app, TRAY_QUIT_ID, "退出 Horologion", true, None::<&str>)
-        .map_err(|error| error.to_string())?;
+    let quit = MenuItem::with_id(
+        app,
+        tauri_config::tray::QUIT_ID,
+        "退出 Horologion",
+        true,
+        None::<&str>,
+    )
+    .map_err(|error| error.to_string())?;
     let menu = Menu::with_items(
         app,
         &[&show, &start_listener, &stop_listener, &separator, &quit],
     )
     .map_err(|error| error.to_string())?;
 
-    let mut builder = TrayIconBuilder::with_id(TRAY_ID)
-        .tooltip("Horologion")
+    let mut builder = TrayIconBuilder::with_id(tauri_config::tray::ID)
+        .tooltip(app_config::DISPLAY_NAME)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app_handle, event| {
@@ -304,18 +318,18 @@ fn handle_tray_menu_event<R: Runtime>(app_handle: &AppHandle<R>, id: &str) {
     let state = app_handle.state::<server::ServerState>();
 
     match id {
-        TRAY_SHOW_ID => show_main_window(app_handle),
-        TRAY_START_LISTENER_ID => {
+        tauri_config::tray::SHOW_ID => show_main_window(app_handle),
+        tauri_config::tray::START_LISTENER_ID => {
             if let Err(error) = start_listener_sidecar(app_handle, &state) {
                 warn!("Failed to start listener from tray: {}", error);
             }
         }
-        TRAY_STOP_LISTENER_ID => {
+        tauri_config::tray::STOP_LISTENER_ID => {
             if let Err(error) = stop_listener_sidecar(&state) {
                 warn!("Failed to stop listener from tray: {}", error);
             }
         }
-        TRAY_QUIT_ID => quit_from_tray(app_handle, &state),
+        tauri_config::tray::QUIT_ID => quit_from_tray(app_handle, &state),
         _ => {}
     }
 }
@@ -335,7 +349,7 @@ fn should_show_window_from_tray_event(event: &TrayIconEvent) -> bool {
 }
 
 fn show_main_window<R: Runtime>(app_handle: &AppHandle<R>) {
-    let Some(window) = app_handle.get_webview_window("main") else {
+    let Some(window) = app_handle.get_webview_window(tauri_config::MAIN_WINDOW_LABEL) else {
         return;
     };
 
@@ -363,7 +377,7 @@ fn quit_from_tray<R: Runtime>(app_handle: &AppHandle<R>, state: &server::ServerS
 }
 
 fn watch_main_window_lifecycle(app: &tauri::App) {
-    let Some(window) = app.get_webview_window("main") else {
+    let Some(window) = app.get_webview_window(tauri_config::MAIN_WINDOW_LABEL) else {
         return;
     };
     let main_window = window.clone();
@@ -403,7 +417,7 @@ fn window_state_path<R: Runtime>(app_handle: &AppHandle<R>) -> Option<PathBuf> {
     app_handle
         .path()
         .app_config_dir()
-        .map(|dir| dir.join(WINDOW_STATE_FILE))
+        .map(|dir| dir.join(tauri_config::WINDOW_STATE_FILE))
         .map_err(|error| {
             warn!("Failed to resolve app config directory: {}", error);
             error

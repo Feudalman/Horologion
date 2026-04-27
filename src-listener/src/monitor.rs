@@ -1,6 +1,7 @@
 use crate::permissions;
 use crate::window::{get_current_window_info, WindowInfo};
 use chrono::{DateTime, Local, Utc};
+use config::{env, protocol};
 use database::{
     api::{init as init_database, insert_input_event},
     db::DatabaseManager,
@@ -14,8 +15,6 @@ use std::panic::AssertUnwindSafe;
 
 const COLLECTOR_NAME: &str = env!("CARGO_PKG_NAME");
 const COLLECTOR_VERSION: &str = env!("CARGO_PKG_VERSION");
-const TRANSPORT_ENV: &str = "HOROLOGION_LISTENER_TRANSPORT";
-const STDIO_EVENT_PREFIX: &str = "__HOROLOGION_INPUT_EVENT__";
 
 /// 事件监听器
 pub struct EventListener {
@@ -33,13 +32,13 @@ enum ListenerTransport {
 
 impl ListenerTransport {
     fn from_env() -> Self {
-        match std::env::var(TRANSPORT_ENV)
+        match std::env::var(env::LISTENER_TRANSPORT)
             .ok()
             .as_deref()
             .map(str::to_lowercase)
             .as_deref()
         {
-            Some("stdio") => Self::Stdio,
+            Some(protocol::LISTENER_TRANSPORT_STDIO) => Self::Stdio,
             _ => Self::Database,
         }
     }
@@ -295,7 +294,7 @@ impl EventListener {
             }
             ListenerTransport::Stdio => match serde_json::to_string(&input_event) {
                 Ok(payload) => {
-                    println!("{STDIO_EVENT_PREFIX}{payload}");
+                    println!("{}{payload}", protocol::LISTENER_STDIO_EVENT_PREFIX);
                     io::stdout().flush().unwrap();
                 }
                 Err(error) => error!("Failed to serialize input event: {}", error),

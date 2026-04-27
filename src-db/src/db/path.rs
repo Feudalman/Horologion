@@ -3,6 +3,7 @@
 //! 根据不同的运行模式和操作系统提供正确的数据库路径和配置文件路径
 
 use crate::errors::{DatabaseError, DatabaseResult};
+use config::{app, database, env, paths};
 use std::path::{Path, PathBuf};
 
 /// 运行模式枚举
@@ -23,7 +24,7 @@ impl RunMode {
     /// - Debug 构建默认为 Development
     /// - Release 构建默认为 Production
     pub fn from_env() -> Self {
-        match std::env::var("RUN_MODE")
+        match std::env::var(env::RUN_MODE)
             .ok()
             .as_deref()
             .map(|s| s.to_lowercase())
@@ -74,27 +75,39 @@ fn get_config_path_candidates() -> Vec<PathBuf> {
 
     // 用户配置目录
     if let Some(config_dir) = dirs::config_dir() {
-        candidates.push(config_dir.join("horologion").join("config.toml"));
+        candidates.push(config_dir.join(app::NAME).join(paths::CONFIG_FILE_NAME));
     }
 
     // 系统配置目录（平台相关）
     #[cfg(target_os = "linux")]
     {
-        candidates.push(PathBuf::from("/etc/config/horologion/config.toml"));
-        candidates.push(PathBuf::from("/etc/horologion/config.toml"));
+        candidates.push(PathBuf::from(format!(
+            "/etc/config/{}/{}",
+            app::NAME,
+            paths::CONFIG_FILE_NAME
+        )));
+        candidates.push(PathBuf::from(format!(
+            "/etc/{}/{}",
+            app::NAME,
+            paths::CONFIG_FILE_NAME
+        )));
     }
 
     #[cfg(target_os = "macos")]
     {
-        candidates.push(PathBuf::from("/Library/Preferences/horologion/config.toml"));
+        candidates.push(PathBuf::from(format!(
+            "/Library/Preferences/{}/{}",
+            app::NAME,
+            paths::CONFIG_FILE_NAME
+        )));
     }
 
     #[cfg(target_os = "windows")]
     {
         if let Some(program_data) = std::env::var_os("PROGRAMDATA") {
             let path = PathBuf::from(program_data)
-                .join("horologion")
-                .join("config.toml");
+                .join(app::NAME)
+                .join(paths::CONFIG_FILE_NAME);
             candidates.push(path);
         }
     }
@@ -115,17 +128,19 @@ pub fn get_default_db_path(mode: &RunMode) -> DatabaseResult<PathBuf> {
         )),
         RunMode::Development => {
             let project_root = find_project_root()?;
-            let db_dir = project_root.join("playground").join("db");
+            let db_dir = project_root
+                .join(paths::PLAYGROUND_DIR)
+                .join(paths::DATABASE_DIR);
             ensure_directory_exists(&db_dir)?;
-            Ok(db_dir.join("horologion.db"))
+            Ok(db_dir.join(database::FILE_NAME))
         }
         RunMode::Production => {
             let data_dir = dirs::data_dir().ok_or_else(|| {
                 DatabaseError::PathNotFound("Failed to get system data directory".to_string())
             })?;
-            let app_data_dir = data_dir.join("horologion");
+            let app_data_dir = data_dir.join(app::NAME);
             ensure_directory_exists(&app_data_dir)?;
-            Ok(app_data_dir.join("horologion.db"))
+            Ok(app_data_dir.join(database::FILE_NAME))
         }
     }
 }
@@ -203,7 +218,7 @@ mod tests {
     /// 测试不存在环境变量时的运行模式
     #[test]
     fn test_run_mode_from_env() {
-        std::env::remove_var("RUN_MODE");
+        std::env::remove_var(env::RUN_MODE);
         let mode = RunMode::from_env();
         let expected = if cfg!(debug_assertions) {
             RunMode::Development
@@ -215,23 +230,23 @@ mod tests {
 
     #[test]
     fn test_run_mode_variants() {
-        std::env::set_var("RUN_MODE", "test");
+        std::env::set_var(env::RUN_MODE, "test");
         assert_eq!(RunMode::from_env(), RunMode::Test);
 
-        std::env::set_var("RUN_MODE", "dev");
+        std::env::set_var(env::RUN_MODE, "dev");
         assert_eq!(RunMode::from_env(), RunMode::Development);
 
-        std::env::set_var("RUN_MODE", "development");
+        std::env::set_var(env::RUN_MODE, "development");
         assert_eq!(RunMode::from_env(), RunMode::Development);
 
-        std::env::set_var("RUN_MODE", "prod");
+        std::env::set_var(env::RUN_MODE, "prod");
         assert_eq!(RunMode::from_env(), RunMode::Production);
 
-        std::env::set_var("RUN_MODE", "production");
+        std::env::set_var(env::RUN_MODE, "production");
         assert_eq!(RunMode::from_env(), RunMode::Production);
 
         // 清理
-        std::env::remove_var("RUN_MODE");
+        std::env::remove_var(env::RUN_MODE);
     }
 
     #[test]
@@ -257,8 +272,8 @@ mod tests {
         let result = get_default_db_path(&RunMode::Development);
         assert!(result.is_ok());
         let path = result.unwrap();
-        assert!(path.to_string_lossy().contains("playground"));
-        assert!(path.to_string_lossy().contains("horologion.db"));
+        assert!(path.to_string_lossy().contains(paths::PLAYGROUND_DIR));
+        assert!(path.to_string_lossy().contains(database::FILE_NAME));
     }
 
     #[test]

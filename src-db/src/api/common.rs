@@ -7,12 +7,9 @@
 
 use crate::errors::{DatabaseError, DatabaseResult};
 use crate::models::{InputEventKind, InputEventRecord, ObservedWindowRecord};
+use config::pagination;
 use duckdb::{types::Type, Row};
 use serde::{Deserialize, Serialize};
-
-const DEFAULT_PAGE: i64 = 1;
-const DEFAULT_PAGE_SIZE: i64 = 100;
-const MAX_PAGE_SIZE: i64 = 1_000;
 
 /// 统一分页查询返回格式。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,7 +85,9 @@ pub(crate) fn resolve_pagination(
     size: Option<i64>,
     cursor: Option<i64>,
 ) -> (i64, i64, i64) {
-    let size = size.unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE);
+    let size = size
+        .unwrap_or(pagination::DEFAULT_PAGE_SIZE)
+        .clamp(1, pagination::MAX_PAGE_SIZE);
 
     if let Some(cursor) = cursor {
         let offset = cursor.max(0);
@@ -96,7 +95,7 @@ pub(crate) fn resolve_pagination(
         return (page, size, offset);
     }
 
-    let page = page.unwrap_or(DEFAULT_PAGE).max(1);
+    let page = page.unwrap_or(pagination::DEFAULT_PAGE).max(1);
     let offset = (page - 1) * size;
 
     (page, size, offset)

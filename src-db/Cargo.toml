@@ -11,6 +11,7 @@ chrono = { version = "0.4", features = ["serde"] }
 log = "0.4"
 thiserror = "1.0"
 dirs = "5.0"
+config = { path = "../src-config" }
 toml = "0.8"
 tokio = { version = "1", features = ["full"], optional = true }
 

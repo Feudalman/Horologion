@@ -7,6 +7,7 @@
 
 use crate::db::path::{self, RunMode};
 use crate::errors::DatabaseResult;
+use config::{database, env};
 use std::path::{Path, PathBuf};
 
 /// 数据库配置来源
@@ -50,7 +51,7 @@ impl DatabaseConfig {
     ///
     /// 建议使用远程数据库时，设置 DATABASE_URL 环境变量；本地时，可以设置 DATABASE_PATH 或使用默认路径。
     pub fn from_env() -> DatabaseResult<Self> {
-        if let Ok(value) = std::env::var("DATABASE_URL") {
+        if let Ok(value) = std::env::var(env::DATABASE_URL) {
             return Self::from_database_value(
                 RunMode::from_env(),
                 value,
@@ -58,7 +59,7 @@ impl DatabaseConfig {
             );
         }
 
-        if let Ok(value) = std::env::var("DATABASE_PATH") {
+        if let Ok(value) = std::env::var(env::DATABASE_PATH) {
             return Self::from_database_value(
                 RunMode::from_env(),
                 value,
@@ -132,7 +133,7 @@ impl DatabaseConfig {
     /// 数据库连接字符串
     pub fn connection_string(&self) -> String {
         match &self.target {
-            DatabaseTarget::Memory => ":memory:".to_string(),
+            DatabaseTarget::Memory => database::MEMORY_CONNECTION.to_string(),
             DatabaseTarget::File(path) => path.to_string_lossy().to_string(),
         }
     }
@@ -171,7 +172,7 @@ impl DatabaseConfig {
         value: String,
         source: DatabaseSource,
     ) -> DatabaseResult<Self> {
-        if value == ":memory:" {
+        if value == database::MEMORY_CONNECTION {
             return Ok(Self {
                 mode,
                 target: DatabaseTarget::Memory,

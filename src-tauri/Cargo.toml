@@ -37,4 +37,5 @@ flexi_logger = "0.31"
 once_cell = "1.19"
 dotenvy = "0.15"
 database = { path = "../src-db" }
+config = { path = "../src-config" }
 dirs = "5.0"

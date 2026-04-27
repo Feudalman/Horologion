@@ -3,7 +3,8 @@ resolver = "3"
 members = [
     "src-listener",
     "src-tauri",
-    "src-db"
+    "src-db",
+    "src-config"
 ]
 
 [workspace.dependencies]

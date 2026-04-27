@@ -6,6 +6,7 @@ pub fn request_required_permissions() {
 
 #[cfg(target_os = "macos")]
 mod platform {
+    use config::{app, paths};
     use core_foundation::base::TCFType;
     use core_foundation::boolean::CFBoolean;
     use core_foundation::dictionary::CFDictionary;
@@ -108,7 +109,7 @@ mod platform {
     }
 
     fn prompt_marker_path(name: &str) -> Option<PathBuf> {
-        dirs::config_dir().map(|dir| dir.join("horologion").join("permissions").join(name))
+        dirs::config_dir().map(|dir| dir.join(app::NAME).join(paths::PERMISSIONS_DIR).join(name))
     }
 
     #[link(name = "CoreGraphics", kind = "framework")]
